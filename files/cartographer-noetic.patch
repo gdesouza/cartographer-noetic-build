@@ -1,0 +1,2308 @@
+diff --git a/cartographer/cloud/client/map_builder_stub.cc b/cartographer/cloud/client/map_builder_stub.cc
+index c3c4e43..8f4591f 100644
+--- a/cartographer/cloud/client/map_builder_stub.cc
++++ b/cartographer/cloud/client/map_builder_stub.cc
+@@ -32,7 +32,7 @@ namespace cartographer {
+ namespace cloud {
+ namespace {
+ 
+-using common::make_unique;
++using std::make_unique;
+ constexpr int kConnectionTimeoutInSecond = 10;
+ 
+ }  // namespace
+diff --git a/cartographer/cloud/internal/client/trajectory_builder_stub.cc b/cartographer/cloud/internal/client/trajectory_builder_stub.cc
+index efc7342..bd8ed8c 100644
+--- a/cartographer/cloud/internal/client/trajectory_builder_stub.cc
++++ b/cartographer/cloud/internal/client/trajectory_builder_stub.cc
+@@ -37,7 +37,7 @@ TrajectoryBuilderStub::TrajectoryBuilderStub(
+     receive_local_slam_results_client_.Write(request);
+     auto* receive_local_slam_results_client_ptr =
+         &receive_local_slam_results_client_;
+-    receive_local_slam_results_thread_ = common::make_unique<std::thread>(
++    receive_local_slam_results_thread_ = std::make_unique<std::thread>(
+         [receive_local_slam_results_client_ptr, local_slam_result_callback]() {
+           RunLocalSlamResultsReader(receive_local_slam_results_client_ptr,
+                                     local_slam_result_callback);
+@@ -75,7 +75,7 @@ void TrajectoryBuilderStub::AddSensorData(
+     const std::string& sensor_id,
+     const sensor::TimedPointCloudData& timed_point_cloud_data) {
+   if (!add_rangefinder_client_) {
+-    add_rangefinder_client_ = common::make_unique<
++    add_rangefinder_client_ = std::make_unique<
+         async_grpc::Client<handlers::AddRangefinderDataSignature>>(
+         client_channel_);
+   }
+@@ -90,7 +90,7 @@ void TrajectoryBuilderStub::AddSensorData(const std::string& sensor_id,
+                                           const sensor::ImuData& imu_data) {
+   if (!add_imu_client_) {
+     add_imu_client_ =
+-        common::make_unique<async_grpc::Client<handlers::AddImuDataSignature>>(
++        std::make_unique<async_grpc::Client<handlers::AddImuDataSignature>>(
+             client_channel_);
+   }
+   proto::AddImuDataRequest request;
+@@ -102,7 +102,7 @@ void TrajectoryBuilderStub::AddSensorData(const std::string& sensor_id,
+ void TrajectoryBuilderStub::AddSensorData(
+     const std::string& sensor_id, const sensor::OdometryData& odometry_data) {
+   if (!add_odometry_client_) {
+-    add_odometry_client_ = common::make_unique<
++    add_odometry_client_ = std::make_unique<
+         async_grpc::Client<handlers::AddOdometryDataSignature>>(
+         client_channel_);
+   }
+@@ -116,7 +116,7 @@ void TrajectoryBuilderStub::AddSensorData(
+     const std::string& sensor_id,
+     const sensor::FixedFramePoseData& fixed_frame_pose) {
+   if (!add_fixed_frame_pose_client_) {
+-    add_fixed_frame_pose_client_ = common::make_unique<
++    add_fixed_frame_pose_client_ = std::make_unique<
+         async_grpc::Client<handlers::AddFixedFramePoseDataSignature>>(
+         client_channel_);
+   }
+@@ -129,7 +129,7 @@ void TrajectoryBuilderStub::AddSensorData(
+ void TrajectoryBuilderStub::AddSensorData(
+     const std::string& sensor_id, const sensor::LandmarkData& landmark_data) {
+   if (!add_landmark_client_) {
+-    add_landmark_client_ = common::make_unique<
++    add_landmark_client_ = std::make_unique<
+         async_grpc::Client<handlers::AddLandmarkDataSignature>>(
+         client_channel_);
+   }
+@@ -155,7 +155,7 @@ void TrajectoryBuilderStub::RunLocalSlamResultsReader(
+     sensor::RangeData range_data = sensor::FromProto(response.range_data());
+     auto insertion_result =
+         response.has_insertion_result()
+-            ? common::make_unique<InsertionResult>(
++            ? std::make_unique<InsertionResult>(
+                   InsertionResult{mapping::NodeId{
+                       response.insertion_result().node_id().trajectory_id(),
+                       response.insertion_result().node_id().node_index()}})
+diff --git a/cartographer/cloud/internal/client_server_test.cc b/cartographer/cloud/internal/client_server_test.cc
+index 11bb890..db485d8 100644
+--- a/cartographer/cloud/internal/client_server_test.cc
++++ b/cartographer/cloud/internal/client_server_test.cc
+@@ -110,42 +110,42 @@ class ClientServerTest : public ::testing::Test {
+   }
+ 
+   void InitializeRealServer() {
+-    auto map_builder = common::make_unique<MapBuilder>(
++    auto map_builder = std::make_unique<MapBuilder>(
+         map_builder_server_options_.map_builder_options());
+-    server_ = common::make_unique<MapBuilderServer>(map_builder_server_options_,
++    server_ = std::make_unique<MapBuilderServer>(map_builder_server_options_,
+                                                     std::move(map_builder));
+     EXPECT_TRUE(server_ != nullptr);
+   }
+ 
+   void InitializeRealUploadingServer() {
+-    auto map_builder = common::make_unique<MapBuilder>(
++    auto map_builder = std::make_unique<MapBuilder>(
+         uploading_map_builder_server_options_.map_builder_options());
+-    uploading_server_ = common::make_unique<MapBuilderServer>(
++    uploading_server_ = std::make_unique<MapBuilderServer>(
+         uploading_map_builder_server_options_, std::move(map_builder));
+     EXPECT_TRUE(uploading_server_ != nullptr);
+   }
+ 
+   void InitializeServerWithMockMapBuilder() {
+-    auto mock_map_builder = common::make_unique<MockMapBuilder>();
++    auto mock_map_builder = std::make_unique<MockMapBuilder>();
+     mock_map_builder_ = mock_map_builder.get();
+-    mock_pose_graph_ = common::make_unique<MockPoseGraph>();
++    mock_pose_graph_ = std::make_unique<MockPoseGraph>();
+     EXPECT_CALL(*mock_map_builder_, pose_graph())
+         .WillOnce(::testing::Return(mock_pose_graph_.get()));
+     EXPECT_CALL(*mock_pose_graph_, SetGlobalSlamOptimizationCallback(_));
+-    server_ = common::make_unique<MapBuilderServer>(
++    server_ = std::make_unique<MapBuilderServer>(
+         map_builder_server_options_, std::move(mock_map_builder));
+     EXPECT_TRUE(server_ != nullptr);
+-    mock_trajectory_builder_ = common::make_unique<MockTrajectoryBuilder>();
++    mock_trajectory_builder_ = std::make_unique<MockTrajectoryBuilder>();
+   }
+ 
+   void InitializeStub() {
+-    stub_ = common::make_unique<MapBuilderStub>(
++    stub_ = std::make_unique<MapBuilderStub>(
+         map_builder_server_options_.server_address());
+     EXPECT_TRUE(stub_ != nullptr);
+   }
+ 
+   void InitializeStubForUploadingServer() {
+-    stub_for_uploading_server_ = common::make_unique<MapBuilderStub>(
++    stub_for_uploading_server_ = std::make_unique<MapBuilderStub>(
+         uploading_map_builder_server_options_.server_address());
+     EXPECT_TRUE(stub_for_uploading_server_ != nullptr);
+   }
+diff --git a/cartographer/cloud/internal/handlers/add_fixed_frame_pose_data_handler.cc b/cartographer/cloud/internal/handlers/add_fixed_frame_pose_data_handler.cc
+index a91a46d..aed1d43 100644
+--- a/cartographer/cloud/internal/handlers/add_fixed_frame_pose_data_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_fixed_frame_pose_data_handler.cc
+@@ -45,7 +45,7 @@ void AddFixedFramePoseDataHandler::OnRequest(
+   // 'MapBuilderContext'.
+   if (GetUnsynchronizedContext<MapBuilderContextInterface>()
+           ->local_trajectory_uploader()) {
+-    auto sensor_data = common::make_unique<proto::SensorData>();
++    auto sensor_data = std::make_unique<proto::SensorData>();
+     *sensor_data->mutable_sensor_metadata() = request.sensor_metadata();
+     *sensor_data->mutable_fixed_frame_pose_data() =
+         request.fixed_frame_pose_data();
+@@ -56,7 +56,7 @@ void AddFixedFramePoseDataHandler::OnRequest(
+ }
+ 
+ void AddFixedFramePoseDataHandler::OnReadsDone() {
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_imu_data_handler.cc b/cartographer/cloud/internal/handlers/add_imu_data_handler.cc
+index 5697752..ae44b8f 100644
+--- a/cartographer/cloud/internal/handlers/add_imu_data_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_imu_data_handler.cc
+@@ -43,7 +43,7 @@ void AddImuDataHandler::OnRequest(const proto::AddImuDataRequest &request) {
+   // 'MapBuilderContext'.
+   if (GetUnsynchronizedContext<MapBuilderContextInterface>()
+           ->local_trajectory_uploader()) {
+-    auto sensor_data = common::make_unique<proto::SensorData>();
++    auto sensor_data = std::make_unique<proto::SensorData>();
+     *sensor_data->mutable_sensor_metadata() = request.sensor_metadata();
+     *sensor_data->mutable_imu_data() = request.imu_data();
+     GetUnsynchronizedContext<MapBuilderContextInterface>()
+@@ -53,7 +53,7 @@ void AddImuDataHandler::OnRequest(const proto::AddImuDataRequest &request) {
+ }
+ 
+ void AddImuDataHandler::OnReadsDone() {
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_landmark_data_handler.cc b/cartographer/cloud/internal/handlers/add_landmark_data_handler.cc
+index 1aa170a..c84e7d2 100644
+--- a/cartographer/cloud/internal/handlers/add_landmark_data_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_landmark_data_handler.cc
+@@ -44,7 +44,7 @@ void AddLandmarkDataHandler::OnRequest(
+   // 'MapBuilderContext'.
+   if (GetUnsynchronizedContext<MapBuilderContextInterface>()
+           ->local_trajectory_uploader()) {
+-    auto sensor_data = common::make_unique<proto::SensorData>();
++    auto sensor_data = std::make_unique<proto::SensorData>();
+     *sensor_data->mutable_sensor_metadata() = request.sensor_metadata();
+     *sensor_data->mutable_landmark_data() = request.landmark_data();
+     GetUnsynchronizedContext<MapBuilderContextInterface>()
+@@ -54,7 +54,7 @@ void AddLandmarkDataHandler::OnRequest(
+ }
+ 
+ void AddLandmarkDataHandler::OnReadsDone() {
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_odometry_data_handler.cc b/cartographer/cloud/internal/handlers/add_odometry_data_handler.cc
+index 91aeb20..343a452 100644
+--- a/cartographer/cloud/internal/handlers/add_odometry_data_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_odometry_data_handler.cc
+@@ -44,7 +44,7 @@ void AddOdometryDataHandler::OnRequest(
+   // 'MapBuilderContext'.
+   if (GetUnsynchronizedContext<MapBuilderContextInterface>()
+           ->local_trajectory_uploader()) {
+-    auto sensor_data = common::make_unique<proto::SensorData>();
++    auto sensor_data = std::make_unique<proto::SensorData>();
+     *sensor_data->mutable_sensor_metadata() = request.sensor_metadata();
+     *sensor_data->mutable_odometry_data() = request.odometry_data();
+     GetUnsynchronizedContext<MapBuilderContextInterface>()
+@@ -54,7 +54,7 @@ void AddOdometryDataHandler::OnRequest(
+ }
+ 
+ void AddOdometryDataHandler::OnReadsDone() {
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_rangefinder_data_handler.cc b/cartographer/cloud/internal/handlers/add_rangefinder_data_handler.cc
+index 9d01f71..ca1bfa4 100644
+--- a/cartographer/cloud/internal/handlers/add_rangefinder_data_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_rangefinder_data_handler.cc
+@@ -41,7 +41,7 @@ void AddRangefinderDataHandler::OnRequest(
+ }
+ 
+ void AddRangefinderDataHandler::OnReadsDone() {
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_sensor_data_batch_handler.cc b/cartographer/cloud/internal/handlers/add_sensor_data_batch_handler.cc
+index fc76566..1ef7587 100644
+--- a/cartographer/cloud/internal/handlers/add_sensor_data_batch_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_sensor_data_batch_handler.cc
+@@ -83,7 +83,7 @@ void AddSensorDataBatchHandler::OnRequest(
+                    << sensor_data.sensor_data_case();
+     }
+   }
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/add_trajectory_handler.cc b/cartographer/cloud/internal/handlers/add_trajectory_handler.cc
+index 569b193..48029b8 100644
+--- a/cartographer/cloud/internal/handlers/add_trajectory_handler.cc
++++ b/cartographer/cloud/internal/handlers/add_trajectory_handler.cc
+@@ -61,7 +61,7 @@ void AddTrajectoryHandler::OnRequest(
+                         trajectory_builder_options);
+   }
+ 
+-  auto response = common::make_unique<proto::AddTrajectoryResponse>();
++  auto response = std::make_unique<proto::AddTrajectoryResponse>();
+   response->set_trajectory_id(trajectory_id);
+   Send(std::move(response));
+ }
+diff --git a/cartographer/cloud/internal/handlers/add_trajectory_handler_test.cc b/cartographer/cloud/internal/handlers/add_trajectory_handler_test.cc
+index 76c757b..be5b78f 100644
+--- a/cartographer/cloud/internal/handlers/add_trajectory_handler_test.cc
++++ b/cartographer/cloud/internal/handlers/add_trajectory_handler_test.cc
+@@ -71,7 +71,7 @@ class AddTrajectoryHandlerTest
+  public:
+   void SetUp() override {
+     testing::HandlerTest<AddTrajectorySignature, AddTrajectoryHandler>::SetUp();
+-    mock_map_builder_ = common::make_unique<mapping::testing::MockMapBuilder>();
++    mock_map_builder_ = std::make_unique<mapping::testing::MockMapBuilder>();
+     EXPECT_CALL(*mock_map_builder_context_,
+                 GetLocalSlamResultCallbackForSubscriptions())
+         .WillOnce(Return(nullptr));
+diff --git a/cartographer/cloud/internal/handlers/finish_trajectory_handler.cc b/cartographer/cloud/internal/handlers/finish_trajectory_handler.cc
+index 011ebac..54897bc 100644
+--- a/cartographer/cloud/internal/handlers/finish_trajectory_handler.cc
++++ b/cartographer/cloud/internal/handlers/finish_trajectory_handler.cc
+@@ -38,7 +38,7 @@ void FinishTrajectoryHandler::OnRequest(
+         ->local_trajectory_uploader()
+         ->FinishTrajectory(request.trajectory_id());
+   }
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/get_all_submap_poses.cc b/cartographer/cloud/internal/handlers/get_all_submap_poses.cc
+index 7847f69..5cb4b78 100644
+--- a/cartographer/cloud/internal/handlers/get_all_submap_poses.cc
++++ b/cartographer/cloud/internal/handlers/get_all_submap_poses.cc
+@@ -33,7 +33,7 @@ void GetAllSubmapPosesHandler::OnRequest(
+                           ->map_builder()
+                           .pose_graph()
+                           ->GetAllSubmapPoses();
+-  auto response = common::make_unique<proto::GetAllSubmapPosesResponse>();
++  auto response = std::make_unique<proto::GetAllSubmapPosesResponse>();
+   for (const auto& submap_id_pose : submap_poses) {
+     auto* submap_pose = response->add_submap_poses();
+     submap_id_pose.id.ToProto(submap_pose->mutable_submap_id());
+diff --git a/cartographer/cloud/internal/handlers/get_constraints_handler.cc b/cartographer/cloud/internal/handlers/get_constraints_handler.cc
+index 12ef849..a41029d 100644
+--- a/cartographer/cloud/internal/handlers/get_constraints_handler.cc
++++ b/cartographer/cloud/internal/handlers/get_constraints_handler.cc
+@@ -32,7 +32,7 @@ void GetConstraintsHandler::OnRequest(const google::protobuf::Empty& request) {
+                          ->map_builder()
+                          .pose_graph()
+                          ->constraints();
+-  auto response = common::make_unique<proto::GetConstraintsResponse>();
++  auto response = std::make_unique<proto::GetConstraintsResponse>();
+   response->mutable_constraints()->Reserve(constraints.size());
+   for (const auto& constraint : constraints) {
+     *response->add_constraints() = mapping::ToProto(constraint);
+diff --git a/cartographer/cloud/internal/handlers/get_landmark_poses_handler.cc b/cartographer/cloud/internal/handlers/get_landmark_poses_handler.cc
+index 24731f4..ca8a4d2 100644
+--- a/cartographer/cloud/internal/handlers/get_landmark_poses_handler.cc
++++ b/cartographer/cloud/internal/handlers/get_landmark_poses_handler.cc
+@@ -33,7 +33,7 @@ void GetLandmarkPosesHandler::OnRequest(
+                             ->map_builder()
+                             .pose_graph()
+                             ->GetLandmarkPoses();
+-  auto response = common::make_unique<proto::GetLandmarkPosesResponse>();
++  auto response = std::make_unique<proto::GetLandmarkPosesResponse>();
+   for (const auto& landmark_pose : landmark_poses) {
+     auto* landmark = response->add_landmark_poses();
+     landmark->set_landmark_id(landmark_pose.first);
+diff --git a/cartographer/cloud/internal/handlers/get_local_to_global_transform_handler.cc b/cartographer/cloud/internal/handlers/get_local_to_global_transform_handler.cc
+index 7fc0095..fc83db2 100644
+--- a/cartographer/cloud/internal/handlers/get_local_to_global_transform_handler.cc
++++ b/cartographer/cloud/internal/handlers/get_local_to_global_transform_handler.cc
+@@ -29,7 +29,7 @@ namespace handlers {
+ void GetLocalToGlobalTransformHandler::OnRequest(
+     const proto::GetLocalToGlobalTransformRequest& request) {
+   auto response =
+-      common::make_unique<proto::GetLocalToGlobalTransformResponse>();
++      std::make_unique<proto::GetLocalToGlobalTransformResponse>();
+   auto local_to_global =
+       GetContext<MapBuilderContextInterface>()
+           ->map_builder()
+diff --git a/cartographer/cloud/internal/handlers/get_submap_handler.cc b/cartographer/cloud/internal/handlers/get_submap_handler.cc
+index 13bf8b7..74e5e60 100644
+--- a/cartographer/cloud/internal/handlers/get_submap_handler.cc
++++ b/cartographer/cloud/internal/handlers/get_submap_handler.cc
+@@ -27,7 +27,7 @@ namespace cloud {
+ namespace handlers {
+ 
+ void GetSubmapHandler::OnRequest(const proto::GetSubmapRequest &request) {
+-  auto response = common::make_unique<proto::GetSubmapResponse>();
++  auto response = std::make_unique<proto::GetSubmapResponse>();
+   response->set_error_msg(
+       GetContext<MapBuilderContextInterface>()->map_builder().SubmapToProto(
+           mapping::SubmapId{request.submap_id().trajectory_id(),
+diff --git a/cartographer/cloud/internal/handlers/get_trajectory_node_poses_handler.cc b/cartographer/cloud/internal/handlers/get_trajectory_node_poses_handler.cc
+index 8880fec..d83fa74 100644
+--- a/cartographer/cloud/internal/handlers/get_trajectory_node_poses_handler.cc
++++ b/cartographer/cloud/internal/handlers/get_trajectory_node_poses_handler.cc
+@@ -33,7 +33,7 @@ void GetTrajectoryNodePosesHandler::OnRequest(
+                         ->map_builder()
+                         .pose_graph()
+                         ->GetTrajectoryNodePoses();
+-  auto response = common::make_unique<proto::GetTrajectoryNodePosesResponse>();
++  auto response = std::make_unique<proto::GetTrajectoryNodePosesResponse>();
+   for (const auto& node_id_pose : node_poses) {
+     auto* node_pose = response->add_node_poses();
+     node_id_pose.id.ToProto(node_pose->mutable_node_id());
+diff --git a/cartographer/cloud/internal/handlers/is_trajectory_finished_handler.cc b/cartographer/cloud/internal/handlers/is_trajectory_finished_handler.cc
+index 8537b9b..8111898 100644
+--- a/cartographer/cloud/internal/handlers/is_trajectory_finished_handler.cc
++++ b/cartographer/cloud/internal/handlers/is_trajectory_finished_handler.cc
+@@ -27,7 +27,7 @@ namespace handlers {
+ 
+ void IsTrajectoryFinishedHandler::OnRequest(
+     const proto::IsTrajectoryFinishedRequest& request) {
+-  auto response = common::make_unique<proto::IsTrajectoryFinishedResponse>();
++  auto response = std::make_unique<proto::IsTrajectoryFinishedResponse>();
+   response->set_is_finished(
+       GetContext<MapBuilderContextInterface>()
+           ->map_builder()
+diff --git a/cartographer/cloud/internal/handlers/is_trajectory_frozen_handler.cc b/cartographer/cloud/internal/handlers/is_trajectory_frozen_handler.cc
+index ede3175..474ba14 100644
+--- a/cartographer/cloud/internal/handlers/is_trajectory_frozen_handler.cc
++++ b/cartographer/cloud/internal/handlers/is_trajectory_frozen_handler.cc
+@@ -27,7 +27,7 @@ namespace handlers {
+ 
+ void IsTrajectoryFrozenHandler::OnRequest(
+     const proto::IsTrajectoryFrozenRequest& request) {
+-  auto response = common::make_unique<proto::IsTrajectoryFrozenResponse>();
++  auto response = std::make_unique<proto::IsTrajectoryFrozenResponse>();
+   response->set_is_frozen(GetContext<MapBuilderContextInterface>()
+                               ->map_builder()
+                               .pose_graph()
+diff --git a/cartographer/cloud/internal/handlers/load_state_handler.cc b/cartographer/cloud/internal/handlers/load_state_handler.cc
+index 1a3de1e..18d038b 100644
+--- a/cartographer/cloud/internal/handlers/load_state_handler.cc
++++ b/cartographer/cloud/internal/handlers/load_state_handler.cc
+@@ -45,7 +45,7 @@ void LoadStateHandler::OnRequest(const proto::LoadStateRequest& request) {
+ void LoadStateHandler::OnReadsDone() {
+   GetContext<MapBuilderContextInterface>()->map_builder().LoadState(&reader_,
+                                                                     true);
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/receive_global_slam_optimizations_handler.cc b/cartographer/cloud/internal/handlers/receive_global_slam_optimizations_handler.cc
+index 5c902b7..11412b1 100644
+--- a/cartographer/cloud/internal/handlers/receive_global_slam_optimizations_handler.cc
++++ b/cartographer/cloud/internal/handlers/receive_global_slam_optimizations_handler.cc
+@@ -31,7 +31,7 @@ std::unique_ptr<proto::ReceiveGlobalSlamOptimizationsResponse> GenerateResponse(
+     const std::map<int, mapping::SubmapId> &last_optimized_submap_ids,
+     const std::map<int, mapping::NodeId> &last_optimized_node_ids) {
+   auto response =
+-      common::make_unique<proto::ReceiveGlobalSlamOptimizationsResponse>();
++      std::make_unique<proto::ReceiveGlobalSlamOptimizationsResponse>();
+   for (const auto &entry : last_optimized_submap_ids) {
+     entry.second.ToProto(
+         &(*response->mutable_last_optimized_submap_ids())[entry.first]);
+diff --git a/cartographer/cloud/internal/handlers/receive_local_slam_results_handler.cc b/cartographer/cloud/internal/handlers/receive_local_slam_results_handler.cc
+index 94956f7..eac715b 100644
+--- a/cartographer/cloud/internal/handlers/receive_local_slam_results_handler.cc
++++ b/cartographer/cloud/internal/handlers/receive_local_slam_results_handler.cc
+@@ -30,7 +30,7 @@ namespace {
+ std::unique_ptr<proto::ReceiveLocalSlamResultsResponse> GenerateResponse(
+     std::unique_ptr<MapBuilderContextInterface::LocalSlamResult>
+         local_slam_result) {
+-  auto response = common::make_unique<proto::ReceiveLocalSlamResultsResponse>();
++  auto response = std::make_unique<proto::ReceiveLocalSlamResultsResponse>();
+   response->set_trajectory_id(local_slam_result->trajectory_id);
+   response->set_timestamp(common::ToUniversal(local_slam_result->time));
+   *response->mutable_local_pose() =
+@@ -74,7 +74,7 @@ void ReceiveLocalSlamResultsHandler::OnRequest(
+               });
+ 
+   subscription_id_ =
+-      common::make_unique<MapBuilderContextInterface::LocalSlamSubscriptionId>(
++      std::make_unique<MapBuilderContextInterface::LocalSlamSubscriptionId>(
+           subscription_id);
+ }
+ 
+diff --git a/cartographer/cloud/internal/handlers/run_final_optimization_handler.cc b/cartographer/cloud/internal/handlers/run_final_optimization_handler.cc
+index 472b09b..6ee4c3b 100644
+--- a/cartographer/cloud/internal/handlers/run_final_optimization_handler.cc
++++ b/cartographer/cloud/internal/handlers/run_final_optimization_handler.cc
+@@ -34,7 +34,7 @@ void RunFinalOptimizationHandler::OnRequest(
+       ->map_builder()
+       .pose_graph()
+       ->RunFinalOptimization();
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/set_landmark_pose_handler.cc b/cartographer/cloud/internal/handlers/set_landmark_pose_handler.cc
+index ad457d3..6e7bcb3 100644
+--- a/cartographer/cloud/internal/handlers/set_landmark_pose_handler.cc
++++ b/cartographer/cloud/internal/handlers/set_landmark_pose_handler.cc
+@@ -34,7 +34,7 @@ void SetLandmarkPoseHandler::OnRequest(
+       ->SetLandmarkPose(
+           request.landmark_pose().landmark_id(),
+           transform::ToRigid3(request.landmark_pose().global_pose()));
+-  Send(common::make_unique<google::protobuf::Empty>());
++  Send(std::make_unique<google::protobuf::Empty>());
+ }
+ 
+ }  // namespace handlers
+diff --git a/cartographer/cloud/internal/handlers/write_state_handler.cc b/cartographer/cloud/internal/handlers/write_state_handler.cc
+index 1b480ff..c2fe782 100644
+--- a/cartographer/cloud/internal/handlers/write_state_handler.cc
++++ b/cartographer/cloud/internal/handlers/write_state_handler.cc
+@@ -35,7 +35,7 @@ void WriteStateHandler::OnRequest(const google::protobuf::Empty& request) {
+           return true;
+         }
+ 
+-        auto response = common::make_unique<proto::WriteStateResponse>();
++        auto response = std::make_unique<proto::WriteStateResponse>();
+         if (proto->GetTypeName() ==
+             "cartographer.mapping.proto.SerializationHeader") {
+           response->mutable_header()->CopyFrom(*proto);
+diff --git a/cartographer/cloud/internal/local_trajectory_uploader.cc b/cartographer/cloud/internal/local_trajectory_uploader.cc
+index c5add7d..c9ccbd8 100644
+--- a/cartographer/cloud/internal/local_trajectory_uploader.cc
++++ b/cartographer/cloud/internal/local_trajectory_uploader.cc
+@@ -33,7 +33,7 @@ namespace cartographer {
+ namespace cloud {
+ namespace {
+ 
+-using common::make_unique;
++using std::make_unique;
+ 
+ constexpr int kConnectionTimeoutInSecond = 10;
+ const common::Duration kPopTimeout = common::FromMilliseconds(100);
+diff --git a/cartographer/cloud/internal/map_builder_context_impl.cc b/cartographer/cloud/internal/map_builder_context_impl.cc
+index 54fc4cb..8432be5 100644
+--- a/cartographer/cloud/internal/map_builder_context_impl.cc
++++ b/cartographer/cloud/internal/map_builder_context_impl.cc
+@@ -27,9 +27,9 @@ template <>
+ void MapBuilderContext<mapping::Submap2D>::EnqueueLocalSlamResultData(
+     int trajectory_id, const std::string& sensor_id,
+     const mapping::proto::LocalSlamResultData& local_slam_result_data) {
+-  map_builder_server_->incoming_data_queue_.Push(common::make_unique<Data>(
++  map_builder_server_->incoming_data_queue_.Push(std::make_unique<Data>(
+       Data{trajectory_id,
+-           common::make_unique<mapping::LocalSlamResult2D>(
++           std::make_unique<mapping::LocalSlamResult2D>(
+                sensor_id, local_slam_result_data, &submap_controller_)}));
+ }
+ 
+@@ -37,9 +37,9 @@ template <>
+ void MapBuilderContext<mapping::Submap3D>::EnqueueLocalSlamResultData(
+     int trajectory_id, const std::string& sensor_id,
+     const mapping::proto::LocalSlamResultData& local_slam_result_data) {
+-  map_builder_server_->incoming_data_queue_.Push(common::make_unique<Data>(
++  map_builder_server_->incoming_data_queue_.Push(std::make_unique<Data>(
+       Data{trajectory_id,
+-           common::make_unique<mapping::LocalSlamResult3D>(
++           std::make_unique<mapping::LocalSlamResult3D>(
+                sensor_id, local_slam_result_data, &submap_controller_)}));
+ }
+ 
+diff --git a/cartographer/cloud/internal/map_builder_context_impl.h b/cartographer/cloud/internal/map_builder_context_impl.h
+index 18883a5..49e8303 100644
+--- a/cartographer/cloud/internal/map_builder_context_impl.h
++++ b/cartographer/cloud/internal/map_builder_context_impl.h
+@@ -101,7 +101,7 @@ template <class SubmapType>
+ void MapBuilderContext<SubmapType>::EnqueueSensorData(
+     int trajectory_id, std::unique_ptr<sensor::Data> data) {
+   map_builder_server_->incoming_data_queue_.Push(
+-      common::make_unique<Data>(Data{trajectory_id, std::move(data)}));
++      std::make_unique<Data>(Data{trajectory_id, std::move(data)}));
+ }
+ 
+ template <>
+diff --git a/cartographer/cloud/internal/map_builder_server.cc b/cartographer/cloud/internal/map_builder_server.cc
+index d135982..c1e4316 100644
+--- a/cartographer/cloud/internal/map_builder_server.cc
++++ b/cartographer/cloud/internal/map_builder_server.cc
+@@ -93,11 +93,11 @@ MapBuilderServer::MapBuilderServer(
+   if (map_builder_server_options.map_builder_options()
+           .use_trajectory_builder_2d()) {
+     grpc_server_->SetExecutionContext(
+-        common::make_unique<MapBuilderContext<mapping::Submap2D>>(this));
++        std::make_unique<MapBuilderContext<mapping::Submap2D>>(this));
+   } else if (map_builder_server_options.map_builder_options()
+                  .use_trajectory_builder_3d()) {
+     grpc_server_->SetExecutionContext(
+-        common::make_unique<MapBuilderContext<mapping::Submap3D>>(this));
++        std::make_unique<MapBuilderContext<mapping::Submap3D>>(this));
+   } else {
+     LOG(FATAL)
+         << "Set either use_trajectory_builder_2d or use_trajectory_builder_3d";
+@@ -156,7 +156,7 @@ void MapBuilderServer::StartSlamThread() {
+   CHECK(!slam_thread_);
+ 
+   // Start the SLAM processing thread.
+-  slam_thread_ = common::make_unique<std::thread>(
++  slam_thread_ = std::make_unique<std::thread>(
+       [this]() { this->ProcessSensorDataQueue(); });
+ }
+ 
+@@ -173,7 +173,7 @@ void MapBuilderServer::OnLocalSlamResult(
+   if (insertion_result &&
+       grpc_server_->GetUnsynchronizedContext<MapBuilderContextInterface>()
+           ->local_trajectory_uploader()) {
+-    auto sensor_data = common::make_unique<proto::SensorData>();
++    auto sensor_data = std::make_unique<proto::SensorData>();
+     auto sensor_id =
+         grpc_server_->GetUnsynchronizedContext<MapBuilderContextInterface>()
+             ->local_trajectory_uploader()
+@@ -194,14 +194,14 @@ void MapBuilderServer::OnLocalSlamResult(
+   for (auto& entry : local_slam_subscriptions_[trajectory_id]) {
+     auto copy_of_insertion_result =
+         insertion_result
+-            ? common::make_unique<
++            ? std::make_unique<
+                   const mapping::TrajectoryBuilderInterface::InsertionResult>(
+                   *insertion_result)
+             : nullptr;
+     MapBuilderContextInterface::LocalSlamSubscriptionCallback callback =
+         entry.second;
+     if (!callback(
+-            common::make_unique<MapBuilderContextInterface::LocalSlamResult>(
++            std::make_unique<MapBuilderContextInterface::LocalSlamResult>(
+                 MapBuilderContextInterface::LocalSlamResult{
+                     trajectory_id, time, local_pose, shared_range_data,
+                     std::move(copy_of_insertion_result)}))) {
+diff --git a/cartographer/cloud/internal/testing/handler_test.h b/cartographer/cloud/internal/testing/handler_test.h
+index 96c525f..1452900 100644
+--- a/cartographer/cloud/internal/testing/handler_test.h
++++ b/cartographer/cloud/internal/testing/handler_test.h
+@@ -36,16 +36,16 @@ template <typename HandlerConcept, typename HandlerType>
+ class HandlerTest : public Test {
+  public:
+   void SetUp() override {
+-    test_server_ = common::make_unique<
++    test_server_ = std::make_unique<
+         async_grpc::testing::RpcHandlerTestServer<HandlerConcept, HandlerType>>(
+-        common::make_unique<MockMapBuilderContext>());
++        std::make_unique<MockMapBuilderContext>());
+     mock_map_builder_context_ =
+         test_server_
+             ->template GetUnsynchronizedContext<MockMapBuilderContext>();
+     mock_local_trajectory_uploader_ =
+-        common::make_unique<MockLocalTrajectoryUploader>();
+-    mock_map_builder_ = common::make_unique<mapping::testing::MockMapBuilder>();
+-    mock_pose_graph_ = common::make_unique<mapping::testing::MockPoseGraph>();
++        std::make_unique<MockLocalTrajectoryUploader>();
++    mock_map_builder_ = std::make_unique<mapping::testing::MockMapBuilder>();
++    mock_pose_graph_ = std::make_unique<mapping::testing::MockPoseGraph>();
+ 
+     EXPECT_CALL(*mock_map_builder_context_, map_builder())
+         .Times(::testing::AnyNumber())
+diff --git a/cartographer/cloud/map_builder_server_interface.cc b/cartographer/cloud/map_builder_server_interface.cc
+index e983c89..8128506 100644
+--- a/cartographer/cloud/map_builder_server_interface.cc
++++ b/cartographer/cloud/map_builder_server_interface.cc
+@@ -13,7 +13,7 @@ void RegisterMapBuilderServerMetrics(metrics::FamilyFactory* factory) {
+ std::unique_ptr<MapBuilderServerInterface> CreateMapBuilderServer(
+     const proto::MapBuilderServerOptions& map_builder_server_options,
+     std::unique_ptr<mapping::MapBuilderInterface> map_builder) {
+-  return common::make_unique<MapBuilderServer>(map_builder_server_options,
++  return std::make_unique<MapBuilderServer>(map_builder_server_options,
+                                                std::move(map_builder));
+ }
+ 
+diff --git a/cartographer/cloud/map_builder_server_main.cc b/cartographer/cloud/map_builder_server_main.cc
+index 054989c..2b24847 100644
+--- a/cartographer/cloud/map_builder_server_main.cc
++++ b/cartographer/cloud/map_builder_server_main.cc
+@@ -54,7 +54,7 @@ void Run(const std::string& configuration_directory,
+   // config.
+   map_builder_server_options.mutable_map_builder_options()
+       ->set_collate_by_trajectory(true);
+-  auto map_builder = common::make_unique<mapping::MapBuilder>(
++  auto map_builder = std::make_unique<mapping::MapBuilder>(
+       map_builder_server_options.map_builder_options());
+   std::unique_ptr<MapBuilderServerInterface> map_builder_server =
+       CreateMapBuilderServer(map_builder_server_options,
+diff --git a/cartographer/cloud/map_builder_server_options.cc b/cartographer/cloud/map_builder_server_options.cc
+index f499a71..e28611e 100644
+--- a/cartographer/cloud/map_builder_server_options.cc
++++ b/cartographer/cloud/map_builder_server_options.cc
+@@ -47,7 +47,7 @@ proto::MapBuilderServerOptions CreateMapBuilderServerOptions(
+ proto::MapBuilderServerOptions LoadMapBuilderServerOptions(
+     const std::string& configuration_directory,
+     const std::string& configuration_basename) {
+-  auto file_resolver = common::make_unique<common::ConfigurationFileResolver>(
++  auto file_resolver = std::make_unique<common::ConfigurationFileResolver>(
+       std::vector<std::string>{configuration_directory});
+   const std::string code =
+       file_resolver->GetFileContentOrDie(configuration_basename);
+diff --git a/cartographer/cloud/metrics/prometheus/family_factory.cc b/cartographer/cloud/metrics/prometheus/family_factory.cc
+index 1c02199..ca8454d 100644
+--- a/cartographer/cloud/metrics/prometheus/family_factory.cc
++++ b/cartographer/cloud/metrics/prometheus/family_factory.cc
+@@ -51,7 +51,7 @@ class CounterFamily
+ 
+   Counter* Add(const std::map<std::string, std::string>& labels) override {
+     ::prometheus::Counter* counter = &prometheus_->Add(labels);
+-    auto wrapper = common::make_unique<Counter>(counter);
++    auto wrapper = std::make_unique<Counter>(counter);
+     auto* ptr = wrapper.get();
+     wrappers_.emplace_back(std::move(wrapper));
+     return ptr;
+@@ -84,7 +84,7 @@ class GaugeFamily
+ 
+   Gauge* Add(const std::map<std::string, std::string>& labels) override {
+     ::prometheus::Gauge* gauge = &prometheus_->Add(labels);
+-    auto wrapper = common::make_unique<Gauge>(gauge);
++    auto wrapper = std::make_unique<Gauge>(gauge);
+     auto* ptr = wrapper.get();
+     wrappers_.emplace_back(std::move(wrapper));
+     return ptr;
+@@ -115,7 +115,7 @@ class HistogramFamily : public ::cartographer::metrics::Family<
+ 
+   Histogram* Add(const std::map<std::string, std::string>& labels) override {
+     ::prometheus::Histogram* histogram = &prometheus_->Add(labels, boundaries_);
+-    auto wrapper = common::make_unique<Histogram>(histogram);
++    auto wrapper = std::make_unique<Histogram>(histogram);
+     auto* ptr = wrapper.get();
+     wrappers_.emplace_back(std::move(wrapper));
+     return ptr;
+@@ -139,7 +139,7 @@ FamilyFactory::NewCounterFamily(const std::string& name,
+                      .Name(name)
+                      .Help(description)
+                      .Register(*registry_);
+-  auto wrapper = common::make_unique<CounterFamily>(&family);
++  auto wrapper = std::make_unique<CounterFamily>(&family);
+   auto* ptr = wrapper.get();
+   counters_.emplace_back(std::move(wrapper));
+   return ptr;
+@@ -152,7 +152,7 @@ FamilyFactory::NewGaugeFamily(const std::string& name,
+                      .Name(name)
+                      .Help(description)
+                      .Register(*registry_);
+-  auto wrapper = common::make_unique<GaugeFamily>(&family);
++  auto wrapper = std::make_unique<GaugeFamily>(&family);
+   auto* ptr = wrapper.get();
+   gauges_.emplace_back(std::move(wrapper));
+   return ptr;
+@@ -166,7 +166,7 @@ FamilyFactory::NewHistogramFamily(const std::string& name,
+                      .Name(name)
+                      .Help(description)
+                      .Register(*registry_);
+-  auto wrapper = common::make_unique<HistogramFamily>(&family, boundaries);
++  auto wrapper = std::make_unique<HistogramFamily>(&family, boundaries);
+   auto* ptr = wrapper.get();
+   histograms_.emplace_back(std::move(wrapper));
+   return ptr;
+diff --git a/cartographer/common/blocking_queue_test.cc b/cartographer/common/blocking_queue_test.cc
+index 92bdc0c..9314596 100644
+--- a/cartographer/common/blocking_queue_test.cc
++++ b/cartographer/common/blocking_queue_test.cc
+@@ -29,9 +29,9 @@ namespace {
+ 
+ TEST(BlockingQueueTest, testPushPeekPop) {
+   BlockingQueue<std::unique_ptr<int>> blocking_queue;
+-  blocking_queue.Push(common::make_unique<int>(42));
++  blocking_queue.Push(std::make_unique<int>(42));
+   ASSERT_EQ(1, blocking_queue.Size());
+-  blocking_queue.Push(common::make_unique<int>(24));
++  blocking_queue.Push(std::make_unique<int>(24));
+   ASSERT_EQ(2, blocking_queue.Size());
+   EXPECT_EQ(42, *blocking_queue.Peek<int>());
+   ASSERT_EQ(2, blocking_queue.Size());
+@@ -60,10 +60,10 @@ TEST(BlockingQueueTest, testPopWithTimeout) {
+ TEST(BlockingQueueTest, testPushWithTimeout) {
+   BlockingQueue<std::unique_ptr<int>> blocking_queue(1);
+   EXPECT_EQ(true,
+-            blocking_queue.PushWithTimeout(common::make_unique<int>(42),
++            blocking_queue.PushWithTimeout(std::make_unique<int>(42),
+                                            common::FromMilliseconds(150)));
+   EXPECT_EQ(false,
+-            blocking_queue.PushWithTimeout(common::make_unique<int>(15),
++            blocking_queue.PushWithTimeout(std::make_unique<int>(15),
+                                            common::FromMilliseconds(150)));
+   EXPECT_EQ(42, *blocking_queue.Pop());
+   EXPECT_EQ(0, blocking_queue.Size());
+@@ -72,10 +72,10 @@ TEST(BlockingQueueTest, testPushWithTimeout) {
+ TEST(BlockingQueueTest, testPushWithTimeoutInfinteQueue) {
+   BlockingQueue<std::unique_ptr<int>> blocking_queue;
+   EXPECT_EQ(true,
+-            blocking_queue.PushWithTimeout(common::make_unique<int>(42),
++            blocking_queue.PushWithTimeout(std::make_unique<int>(42),
+                                            common::FromMilliseconds(150)));
+   EXPECT_EQ(true,
+-            blocking_queue.PushWithTimeout(common::make_unique<int>(45),
++            blocking_queue.PushWithTimeout(std::make_unique<int>(45),
+                                            common::FromMilliseconds(150)));
+   EXPECT_EQ(42, *blocking_queue.Pop());
+   EXPECT_EQ(45, *blocking_queue.Pop());
+@@ -91,7 +91,7 @@ TEST(BlockingQueueTest, testBlockingPop) {
+   std::thread thread([&blocking_queue, &pop] { pop = *blocking_queue.Pop(); });
+ 
+   std::this_thread::sleep_for(common::FromMilliseconds(100));
+-  blocking_queue.Push(common::make_unique<int>(42));
++  blocking_queue.Push(std::make_unique<int>(42));
+   thread.join();
+   ASSERT_EQ(0, blocking_queue.Size());
+   EXPECT_EQ(42, pop);
+@@ -108,7 +108,7 @@ TEST(BlockingQueueTest, testBlockingPopWithTimeout) {
+   });
+ 
+   std::this_thread::sleep_for(common::FromMilliseconds(100));
+-  blocking_queue.Push(common::make_unique<int>(42));
++  blocking_queue.Push(std::make_unique<int>(42));
+   thread.join();
+   ASSERT_EQ(0, blocking_queue.Size());
+   EXPECT_EQ(42, pop);
+diff --git a/cartographer/common/configuration_files_test.cc b/cartographer/common/configuration_files_test.cc
+index 1104737..e0b31ca 100644
+--- a/cartographer/common/configuration_files_test.cc
++++ b/cartographer/common/configuration_files_test.cc
+@@ -32,7 +32,7 @@ TEST(ConfigurationFilesTest, ValidateMapBuilderOptions) {
+       MAP_BUILDER.use_trajectory_builder_2d = true
+       return MAP_BUILDER)text";
+   EXPECT_NO_FATAL_FAILURE({
+-    auto file_resolver = ::cartographer::common::make_unique<
++    auto file_resolver = std::make_unique<
+         ::cartographer::common::ConfigurationFileResolver>(
+         std::vector<std::string>{
+             std::string(::cartographer::common::kSourceDirectory) +
+@@ -49,7 +49,7 @@ TEST(ConfigurationFilesTest, ValidateTrajectoryBuilderOptions) {
+       TRAJECTORY_BUILDER.trajectory_builder_2d.use_imu_data = false
+       return TRAJECTORY_BUILDER)text";
+   EXPECT_NO_FATAL_FAILURE({
+-    auto file_resolver = ::cartographer::common::make_unique<
++    auto file_resolver = std::make_unique<
+         ::cartographer::common::ConfigurationFileResolver>(
+         std::vector<std::string>{
+             std::string(::cartographer::common::kSourceDirectory) +
+diff --git a/cartographer/common/lockless_queue_test.cc b/cartographer/common/lockless_queue_test.cc
+index 5c9b565..f315fa3 100644
+--- a/cartographer/common/lockless_queue_test.cc
++++ b/cartographer/common/lockless_queue_test.cc
+@@ -7,13 +7,13 @@ namespace {
+ 
+ TEST(LocklessQueueTest, PushAndPop) {
+   LocklessQueue<int> queue;
+-  queue.Push(common::make_unique<int>(1));
+-  queue.Push(common::make_unique<int>(2));
++  queue.Push(std::make_unique<int>(1));
++  queue.Push(std::make_unique<int>(2));
+   EXPECT_EQ(*queue.Pop(), 1);
+-  queue.Push(common::make_unique<int>(3));
+-  queue.Push(common::make_unique<int>(4));
++  queue.Push(std::make_unique<int>(3));
++  queue.Push(std::make_unique<int>(4));
+   EXPECT_EQ(*queue.Pop(), 2);
+-  queue.Push(common::make_unique<int>(5));
++  queue.Push(std::make_unique<int>(5));
+   EXPECT_EQ(*queue.Pop(), 3);
+   EXPECT_EQ(*queue.Pop(), 4);
+   EXPECT_EQ(*queue.Pop(), 5);
+diff --git a/cartographer/common/lua_parameter_dictionary_test.cc b/cartographer/common/lua_parameter_dictionary_test.cc
+index 1862ae6..1864656 100644
+--- a/cartographer/common/lua_parameter_dictionary_test.cc
++++ b/cartographer/common/lua_parameter_dictionary_test.cc
+@@ -31,7 +31,7 @@ namespace {
+ std::unique_ptr<LuaParameterDictionary> MakeNonReferenceCounted(
+     const std::string& code) {
+   return LuaParameterDictionary::NonReferenceCounted(
+-      code, common::make_unique<DummyFileResolver>());
++      code, std::make_unique<DummyFileResolver>());
+ }
+ 
+ class LuaParameterDictionaryTest : public ::testing::Test {
+diff --git a/cartographer/common/lua_parameter_dictionary_test_helpers.h b/cartographer/common/lua_parameter_dictionary_test_helpers.h
+index f395f25..7c25f9c 100644
+--- a/cartographer/common/lua_parameter_dictionary_test_helpers.h
++++ b/cartographer/common/lua_parameter_dictionary_test_helpers.h
+@@ -48,8 +48,8 @@ class DummyFileResolver : public FileResolver {
+ 
+ std::unique_ptr<LuaParameterDictionary> MakeDictionary(
+     const std::string& code) {
+-  return common::make_unique<LuaParameterDictionary>(
+-      code, common::make_unique<DummyFileResolver>());
++  return std::make_unique<LuaParameterDictionary>(
++      code, std::make_unique<DummyFileResolver>());
+ }
+ 
+ }  // namespace common
+diff --git a/cartographer/common/optional.h b/cartographer/common/optional.h
+index 58e0a92..49e993f 100644
+--- a/cartographer/common/optional.h
++++ b/cartographer/common/optional.h
+@@ -32,11 +32,11 @@ class optional {
+ 
+   optional(const optional& other) {
+     if (other.has_value()) {
+-      value_ = common::make_unique<T>(other.value());
++      value_ = std::make_unique<T>(other.value());
+     }
+   }
+ 
+-  explicit optional(const T& value) { value_ = common::make_unique<T>(value); }
++  explicit optional(const T& value) { value_ = std::make_unique<T>(value); }
+ 
+   bool has_value() const { return value_ != nullptr; }
+ 
+@@ -46,7 +46,7 @@ class optional {
+   }
+ 
+   optional<T>& operator=(const T& other_value) {
+-    this->value_ = common::make_unique<T>(other_value);
++    this->value_ = std::make_unique<T>(other_value);
+     return *this;
+   }
+ 
+@@ -54,7 +54,7 @@ class optional {
+     if (!other.has_value()) {
+       this->value_ = nullptr;
+     } else {
+-      this->value_ = common::make_unique<T>(other.value());
++      this->value_ = std::make_unique<T>(other.value());
+     }
+     return *this;
+   }
+diff --git a/cartographer/common/thread_pool_test.cc b/cartographer/common/thread_pool_test.cc
+index 8cf0264..10510a7 100644
+--- a/cartographer/common/thread_pool_test.cc
++++ b/cartographer/common/thread_pool_test.cc
+@@ -47,7 +47,7 @@ class Receiver {
+ TEST(ThreadPoolTest, RunTask) {
+   ThreadPool pool(1);
+   Receiver receiver;
+-  auto task = common::make_unique<Task>();
++  auto task = std::make_unique<Task>();
+   task->SetWorkItem([&receiver]() { receiver.Receive(1); });
+   pool.Schedule(std::move(task));
+   receiver.WaitForNumberSequence({1});
+@@ -59,7 +59,7 @@ TEST(ThreadPoolTest, ManyTasks) {
+     Receiver receiver;
+     int kNumTasks = 10;
+     for (int i = 0; i < kNumTasks; ++i) {
+-      auto task = common::make_unique<Task>();
++      auto task = std::make_unique<Task>();
+       task->SetWorkItem([&receiver]() { receiver.Receive(1); });
+       pool.Schedule(std::move(task));
+     }
+@@ -70,9 +70,9 @@ TEST(ThreadPoolTest, ManyTasks) {
+ TEST(ThreadPoolTest, RunWithDependency) {
+   ThreadPool pool(2);
+   Receiver receiver;
+-  auto task_2 = common::make_unique<Task>();
++  auto task_2 = std::make_unique<Task>();
+   task_2->SetWorkItem([&receiver]() { receiver.Receive(2); });
+-  auto task_1 = common::make_unique<Task>();
++  auto task_1 = std::make_unique<Task>();
+   task_1->SetWorkItem([&receiver]() { receiver.Receive(1); });
+   auto weak_task_1 = pool.Schedule(std::move(task_1));
+   task_2->AddDependency(weak_task_1);
+@@ -83,10 +83,10 @@ TEST(ThreadPoolTest, RunWithDependency) {
+ TEST(ThreadPoolTest, RunWithOutOfScopeDependency) {
+   ThreadPool pool(2);
+   Receiver receiver;
+-  auto task_2 = common::make_unique<Task>();
++  auto task_2 = std::make_unique<Task>();
+   task_2->SetWorkItem([&receiver]() { receiver.Receive(2); });
+   {
+-    auto task_1 = common::make_unique<Task>();
++    auto task_1 = std::make_unique<Task>();
+     task_1->SetWorkItem([&receiver]() { receiver.Receive(1); });
+     auto weak_task_1 = pool.Schedule(std::move(task_1));
+     task_2->AddDependency(weak_task_1);
+@@ -100,10 +100,10 @@ TEST(ThreadPoolTest, ManyDependencies) {
+     ThreadPool pool(5);
+     Receiver receiver;
+     int kNumDependencies = 10;
+-    auto task = common::make_unique<Task>();
++    auto task = std::make_unique<Task>();
+     task->SetWorkItem([&receiver]() { receiver.Receive(1); });
+     for (int i = 0; i < kNumDependencies; ++i) {
+-      auto dependency_task = common::make_unique<Task>();
++      auto dependency_task = std::make_unique<Task>();
+       dependency_task->SetWorkItem([]() {});
+       task->AddDependency(pool.Schedule(std::move(dependency_task)));
+     }
+@@ -117,11 +117,11 @@ TEST(ThreadPoolTest, ManyDependants) {
+     ThreadPool pool(5);
+     Receiver receiver;
+     int kNumDependants = 10;
+-    auto dependency_task = common::make_unique<Task>();
++    auto dependency_task = std::make_unique<Task>();
+     dependency_task->SetWorkItem([]() {});
+     auto dependency_handle = pool.Schedule(std::move(dependency_task));
+     for (int i = 0; i < kNumDependants; ++i) {
+-      auto task = common::make_unique<Task>();
++      auto task = std::make_unique<Task>();
+       task->AddDependency(dependency_handle);
+       task->SetWorkItem([&receiver]() { receiver.Receive(1); });
+       pool.Schedule(std::move(task));
+@@ -133,13 +133,13 @@ TEST(ThreadPoolTest, ManyDependants) {
+ TEST(ThreadPoolTest, RunWithMultipleDependencies) {
+   ThreadPool pool(2);
+   Receiver receiver;
+-  auto task_1 = common::make_unique<Task>();
++  auto task_1 = std::make_unique<Task>();
+   task_1->SetWorkItem([&receiver]() { receiver.Receive(1); });
+-  auto task_2a = common::make_unique<Task>();
++  auto task_2a = std::make_unique<Task>();
+   task_2a->SetWorkItem([&receiver]() { receiver.Receive(2); });
+-  auto task_2b = common::make_unique<Task>();
++  auto task_2b = std::make_unique<Task>();
+   task_2b->SetWorkItem([&receiver]() { receiver.Receive(2); });
+-  auto task_3 = common::make_unique<Task>();
++  auto task_3 = std::make_unique<Task>();
+   task_3->SetWorkItem([&receiver]() { receiver.Receive(3); });
+   /*          -> task_2a \
+    *  task_1 /-> task_2b --> task_3
+@@ -159,9 +159,9 @@ TEST(ThreadPoolTest, RunWithMultipleDependencies) {
+ TEST(ThreadPoolTest, RunWithFinishedDependency) {
+   ThreadPool pool(2);
+   Receiver receiver;
+-  auto task_1 = common::make_unique<Task>();
++  auto task_1 = std::make_unique<Task>();
+   task_1->SetWorkItem([&receiver]() { receiver.Receive(1); });
+-  auto task_2 = common::make_unique<Task>();
++  auto task_2 = std::make_unique<Task>();
+   task_2->SetWorkItem([&receiver]() { receiver.Receive(2); });
+   auto weak_task_1 = pool.Schedule(std::move(task_1));
+   task_2->AddDependency(weak_task_1);
+diff --git a/cartographer/io/coloring_points_processor.cc b/cartographer/io/coloring_points_processor.cc
+index a11e6b9..d57f190 100644
+--- a/cartographer/io/coloring_points_processor.cc
++++ b/cartographer/io/coloring_points_processor.cc
+@@ -33,7 +33,7 @@ ColoringPointsProcessor::FromDictionary(
+   const Uint8Color color = {{static_cast<uint8>(color_values[0]),
+                              static_cast<uint8>(color_values[1]),
+                              static_cast<uint8>(color_values[2])}};
+-  return common::make_unique<ColoringPointsProcessor>(ToFloatColor(color),
++  return std::make_unique<ColoringPointsProcessor>(ToFloatColor(color),
+                                                       frame_id, next);
+ }
+ 
+diff --git a/cartographer/io/counting_points_processor.cc b/cartographer/io/counting_points_processor.cc
+index 000340d..788e73f 100644
+--- a/cartographer/io/counting_points_processor.cc
++++ b/cartographer/io/counting_points_processor.cc
+@@ -29,7 +29,7 @@ std::unique_ptr<CountingPointsProcessor>
+ CountingPointsProcessor::FromDictionary(
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<CountingPointsProcessor>(next);
++  return std::make_unique<CountingPointsProcessor>(next);
+ }
+ 
+ void CountingPointsProcessor::Process(std::unique_ptr<PointsBatch> batch) {
+diff --git a/cartographer/io/fixed_ratio_sampling_points_processor.cc b/cartographer/io/fixed_ratio_sampling_points_processor.cc
+index e517a1d..847e76f 100644
+--- a/cartographer/io/fixed_ratio_sampling_points_processor.cc
++++ b/cartographer/io/fixed_ratio_sampling_points_processor.cc
+@@ -30,7 +30,7 @@ FixedRatioSamplingPointsProcessor::FromDictionary(
+   const double sampling_ratio(dictionary->GetDouble("sampling_ratio"));
+   CHECK_LT(0., sampling_ratio) << "Sampling ratio <= 0 makes no sense.";
+   CHECK_LT(sampling_ratio, 1.) << "Sampling ratio >= 1 makes no sense.";
+-  return common::make_unique<FixedRatioSamplingPointsProcessor>(sampling_ratio,
++  return std::make_unique<FixedRatioSamplingPointsProcessor>(sampling_ratio,
+                                                                 next);
+ }
+ 
+@@ -59,7 +59,7 @@ PointsProcessor::FlushResult FixedRatioSamplingPointsProcessor::Flush() {
+ 
+     case PointsProcessor::FlushResult::kRestartStream:
+       sampler_ =
+-          common::make_unique<common::FixedRatioSampler>(sampling_ratio_);
++          std::make_unique<common::FixedRatioSampler>(sampling_ratio_);
+       return PointsProcessor::FlushResult::kRestartStream;
+   }
+   LOG(FATAL);
+diff --git a/cartographer/io/frame_id_filtering_points_processor.cc b/cartographer/io/frame_id_filtering_points_processor.cc
+index 2b2ae47..d062a29 100644
+--- a/cartographer/io/frame_id_filtering_points_processor.cc
++++ b/cartographer/io/frame_id_filtering_points_processor.cc
+@@ -36,7 +36,7 @@ FrameIdFilteringPointsProcessor::FromDictionary(
+     drop_frames =
+         dictionary->GetDictionary("drop_frames")->GetArrayValuesAsStrings();
+   }
+-  return common::make_unique<FrameIdFilteringPointsProcessor>(
++  return std::make_unique<FrameIdFilteringPointsProcessor>(
+       std::unordered_set<std::string>(keep_frames.begin(), keep_frames.end()),
+       std::unordered_set<std::string>(drop_frames.begin(), drop_frames.end()),
+       next);
+diff --git a/cartographer/io/hybrid_grid_points_processor.cc b/cartographer/io/hybrid_grid_points_processor.cc
+index e998e23..7da775d 100644
+--- a/cartographer/io/hybrid_grid_points_processor.cc
++++ b/cartographer/io/hybrid_grid_points_processor.cc
+@@ -31,7 +31,7 @@ HybridGridPointsProcessor::FromDictionary(
+     const FileWriterFactory& file_writer_factory,
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<HybridGridPointsProcessor>(
++  return std::make_unique<HybridGridPointsProcessor>(
+       dictionary->GetDouble("voxel_size"),
+       mapping::CreateRangeDataInserterOptions3D(
+           dictionary->GetDictionary("range_data_inserter").get()),
+diff --git a/cartographer/io/intensity_to_color_points_processor.cc b/cartographer/io/intensity_to_color_points_processor.cc
+index 0bceb64..1c4524b 100644
+--- a/cartographer/io/intensity_to_color_points_processor.cc
++++ b/cartographer/io/intensity_to_color_points_processor.cc
+@@ -32,7 +32,7 @@ IntensityToColorPointsProcessor::FromDictionary(
+       dictionary->HasKey("frame_id") ? dictionary->GetString("frame_id") : "";
+   const float min_intensity = dictionary->GetDouble("min_intensity");
+   const float max_intensity = dictionary->GetDouble("max_intensity");
+-  return common::make_unique<IntensityToColorPointsProcessor>(
++  return std::make_unique<IntensityToColorPointsProcessor>(
+       min_intensity, max_intensity, frame_id, next);
+ }
+ 
+diff --git a/cartographer/io/internal/in_memory_proto_stream.h b/cartographer/io/internal/in_memory_proto_stream.h
+index 14da01a..fa1782b 100644
+--- a/cartographer/io/internal/in_memory_proto_stream.h
++++ b/cartographer/io/internal/in_memory_proto_stream.h
+@@ -19,7 +19,7 @@
+ 
+ #include <queue>
+ 
+-#include "cartographer/common/make_unique.h"
++//#include "cartographer/common/make_unique.h"
+ #include "cartographer/common/port.h"
+ #include "cartographer/io/proto_stream_interface.h"
+ #include "google/protobuf/message.h"
+@@ -62,7 +62,7 @@ class InMemoryProtoStreamReader
+ 
+   template <typename MessageType>
+   void AddProto(const MessageType& proto) {
+-    state_chunks_.push(common::make_unique<MessageType>(proto));
++    state_chunks_.push(std::make_unique<MessageType>(proto));
+   }
+ 
+   bool ReadProto(google::protobuf::Message* proto) override;
+diff --git a/cartographer/io/internal/in_memory_proto_stream_test.cc b/cartographer/io/internal/in_memory_proto_stream_test.cc
+index b033385..5da5909 100644
+--- a/cartographer/io/internal/in_memory_proto_stream_test.cc
++++ b/cartographer/io/internal/in_memory_proto_stream_test.cc
+@@ -24,7 +24,7 @@ namespace cartographer {
+ namespace io {
+ namespace {
+ 
+-using common::make_unique;
++using std::make_unique;
+ using google::protobuf::Message;
+ using mapping::proto::PoseGraph;
+ using mapping::proto::SerializedData;
+diff --git a/cartographer/io/min_max_range_filtering_points_processor.cc b/cartographer/io/min_max_range_filtering_points_processor.cc
+index eb17090..346c410 100644
+--- a/cartographer/io/min_max_range_filtering_points_processor.cc
++++ b/cartographer/io/min_max_range_filtering_points_processor.cc
+@@ -27,7 +27,7 @@ std::unique_ptr<MinMaxRangeFiteringPointsProcessor>
+ MinMaxRangeFiteringPointsProcessor::FromDictionary(
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<MinMaxRangeFiteringPointsProcessor>(
++  return std::make_unique<MinMaxRangeFiteringPointsProcessor>(
+       dictionary->GetDouble("min_range"), dictionary->GetDouble("max_range"),
+       next);
+ }
+diff --git a/cartographer/io/outlier_removing_points_processor.cc b/cartographer/io/outlier_removing_points_processor.cc
+index 5cf3619..2373fff 100644
+--- a/cartographer/io/outlier_removing_points_processor.cc
++++ b/cartographer/io/outlier_removing_points_processor.cc
+@@ -27,7 +27,7 @@ std::unique_ptr<OutlierRemovingPointsProcessor>
+ OutlierRemovingPointsProcessor::FromDictionary(
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<OutlierRemovingPointsProcessor>(
++  return std::make_unique<OutlierRemovingPointsProcessor>(
+       dictionary->GetDouble("voxel_size"), next);
+ }
+ 
+diff --git a/cartographer/io/pcd_writing_points_processor.cc b/cartographer/io/pcd_writing_points_processor.cc
+index bbfb618..769eb8b 100644
+--- a/cartographer/io/pcd_writing_points_processor.cc
++++ b/cartographer/io/pcd_writing_points_processor.cc
+@@ -82,7 +82,7 @@ PcdWritingPointsProcessor::FromDictionary(
+     FileWriterFactory file_writer_factory,
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<PcdWritingPointsProcessor>(
++  return std::make_unique<PcdWritingPointsProcessor>(
+       file_writer_factory(dictionary->GetString("filename")), next);
+ }
+ 
+diff --git a/cartographer/io/ply_writing_points_processor.cc b/cartographer/io/ply_writing_points_processor.cc
+index 6e68865..022d338 100644
+--- a/cartographer/io/ply_writing_points_processor.cc
++++ b/cartographer/io/ply_writing_points_processor.cc
+@@ -85,7 +85,7 @@ PlyWritingPointsProcessor::FromDictionary(
+     const FileWriterFactory& file_writer_factory,
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<PlyWritingPointsProcessor>(
++  return std::make_unique<PlyWritingPointsProcessor>(
+       file_writer_factory(dictionary->GetString("filename")), next);
+ }
+ 
+diff --git a/cartographer/io/points_processor_pipeline_builder.cc b/cartographer/io/points_processor_pipeline_builder.cc
+index f348f84..ec7a9c5 100644
+--- a/cartographer/io/points_processor_pipeline_builder.cc
++++ b/cartographer/io/points_processor_pipeline_builder.cc
+@@ -118,7 +118,7 @@ PointsProcessorPipelineBuilder::CreatePipeline(
+   // The last consumer in the pipeline must exist, so that the one created after
+   // it (and being before it in the pipeline) has a valid 'next' to point to.
+   // The last consumer will just drop all points.
+-  pipeline.emplace_back(common::make_unique<NullPointsProcessor>());
++  pipeline.emplace_back(std::make_unique<NullPointsProcessor>());
+ 
+   std::vector<std::unique_ptr<common::LuaParameterDictionary>> configurations =
+       dictionary->GetArrayValuesAsDictionaries();
+diff --git a/cartographer/io/probability_grid_points_processor.cc b/cartographer/io/probability_grid_points_processor.cc
+index f404fb2..0bba191 100644
+--- a/cartographer/io/probability_grid_points_processor.cc
++++ b/cartographer/io/probability_grid_points_processor.cc
+@@ -80,7 +80,7 @@ ProbabilityGridPointsProcessor::FromDictionary(
+                                   dictionary->GetBool("draw_trajectories"))
+                                      ? DrawTrajectories::kYes
+                                      : DrawTrajectories::kNo;
+-  return common::make_unique<ProbabilityGridPointsProcessor>(
++  return std::make_unique<ProbabilityGridPointsProcessor>(
+       dictionary->GetDouble("resolution"),
+       mapping::CreateProbabilityGridRangeDataInserterOptions2D(
+           dictionary->GetDictionary("range_data_inserter").get()),
+@@ -132,7 +132,7 @@ std::unique_ptr<Image> DrawProbabilityGrid(
+     LOG(WARNING) << "Not writing output: empty probability grid";
+     return nullptr;
+   }
+-  auto image = common::make_unique<Image>(cell_limits.num_x_cells,
++  auto image = std::make_unique<Image>(cell_limits.num_x_cells,
+                                           cell_limits.num_y_cells);
+   for (const Eigen::Array2i& xy_index :
+        mapping::XYIndexRangeIterator(cell_limits)) {
+diff --git a/cartographer/io/proto_stream_deserializer_test.cc b/cartographer/io/proto_stream_deserializer_test.cc
+index 6ba5c43..48f650f 100644
+--- a/cartographer/io/proto_stream_deserializer_test.cc
++++ b/cartographer/io/proto_stream_deserializer_test.cc
+@@ -28,7 +28,7 @@ namespace cartographer {
+ namespace io {
+ namespace {
+ 
+-using ::cartographer::common::make_unique;
++using std::make_unique;
+ using ::cartographer::mapping::proto::SerializationHeader;
+ using ::cartographer::mapping::proto::SerializedData;
+ using ::google::protobuf::Message;
+@@ -150,7 +150,7 @@ TEST_F(ProtoStreamDeserializerTest, WorksOnGoldenTextStream) {
+ 
+ TEST_F(ProtoStreamDeserializerTest, FailsIfVersionNotSupported) {
+   InitializeProtoReader(kUnsupportedSerializationHeaderProtoString, {});
+-  EXPECT_DEATH(common::make_unique<ProtoStreamDeserializer>(reader_.get()),
++  EXPECT_DEATH(std::make_unique<ProtoStreamDeserializer>(reader_.get()),
+                "Unsupported serialization format");
+ }
+ 
+diff --git a/cartographer/io/xray_points_processor.cc b/cartographer/io/xray_points_processor.cc
+index 6c9b090..5c70ebf 100644
+--- a/cartographer/io/xray_points_processor.cc
++++ b/cartographer/io/xray_points_processor.cc
+@@ -133,7 +133,7 @@ std::unique_ptr<XRayPointsProcessor> XRayPointsProcessor::FromDictionary(
+     floors = mapping::DetectFloors(trajectories.at(0));
+   }
+ 
+-  return common::make_unique<XRayPointsProcessor>(
++  return std::make_unique<XRayPointsProcessor>(
+       dictionary->GetDouble("voxel_size"),
+       transform::FromDictionary(dictionary->GetDictionary("transform").get())
+           .cast<float>(),
+diff --git a/cartographer/io/xyz_writing_points_processor.cc b/cartographer/io/xyz_writing_points_processor.cc
+index f89ac32..8ac1756 100644
+--- a/cartographer/io/xyz_writing_points_processor.cc
++++ b/cartographer/io/xyz_writing_points_processor.cc
+@@ -30,7 +30,7 @@ XyzWriterPointsProcessor::FromDictionary(
+     const FileWriterFactory& file_writer_factory,
+     common::LuaParameterDictionary* const dictionary,
+     PointsProcessor* const next) {
+-  return common::make_unique<XyzWriterPointsProcessor>(
++  return std::make_unique<XyzWriterPointsProcessor>(
+       file_writer_factory(dictionary->GetString("filename")), next);
+ }
+ 
+diff --git a/cartographer/mapping/2d/probability_grid.cc b/cartographer/mapping/2d/probability_grid.cc
+index 82761d4..5e6c9bc 100644
+--- a/cartographer/mapping/2d/probability_grid.cc
++++ b/cartographer/mapping/2d/probability_grid.cc
+@@ -87,7 +87,7 @@ std::unique_ptr<Grid2D> ProbabilityGrid::ComputeCroppedGrid() const {
+   const Eigen::Vector2d max =
+       limits().max() - resolution * Eigen::Vector2d(offset.y(), offset.x());
+   std::unique_ptr<ProbabilityGrid> cropped_grid =
+-      common::make_unique<ProbabilityGrid>(
++      std::make_unique<ProbabilityGrid>(
+           MapLimits(resolution, max, cell_limits));
+   for (const Eigen::Array2i& xy_index : XYIndexRangeIterator(cell_limits)) {
+     if (!IsKnown(xy_index + offset)) continue;
+diff --git a/cartographer/mapping/2d/range_data_inserter_2d_test.cc b/cartographer/mapping/2d/range_data_inserter_2d_test.cc
+index f3b5227..0be39d3 100644
+--- a/cartographer/mapping/2d/range_data_inserter_2d_test.cc
++++ b/cartographer/mapping/2d/range_data_inserter_2d_test.cc
+@@ -43,7 +43,7 @@ class RangeDataInserterTest2D : public ::testing::Test {
+     options_ = CreateProbabilityGridRangeDataInserterOptions2D(
+         parameter_dictionary.get());
+     range_data_inserter_ =
+-        common::make_unique<ProbabilityGridRangeDataInserter2D>(options_);
++        std::make_unique<ProbabilityGridRangeDataInserter2D>(options_);
+   }
+ 
+   void InsertPointCloud() {
+diff --git a/cartographer/mapping/2d/submap_2d.cc b/cartographer/mapping/2d/submap_2d.cc
+index 4bb97f6..0312f6c 100644
+--- a/cartographer/mapping/2d/submap_2d.cc
++++ b/cartographer/mapping/2d/submap_2d.cc
+@@ -71,7 +71,7 @@ Submap2D::Submap2D(const proto::Submap2D& proto)
+     : Submap(transform::ToRigid3(proto.local_pose())) {
+   if (proto.has_grid()) {
+     CHECK(proto.grid().has_probability_grid_2d());
+-    grid_ = common::make_unique<ProbabilityGrid>(proto.grid());
++    grid_ = std::make_unique<ProbabilityGrid>(proto.grid());
+   }
+   set_num_range_data(proto.num_range_data());
+   set_finished(proto.finished());
+@@ -96,7 +96,7 @@ void Submap2D::UpdateFromProto(const proto::Submap& proto) {
+   set_finished(submap_2d.finished());
+   if (proto.submap_2d().has_grid()) {
+     CHECK(proto.submap_2d().grid().has_probability_grid_2d());
+-    grid_ = common::make_unique<ProbabilityGrid>(submap_2d.grid());
++    grid_ = std::make_unique<ProbabilityGrid>(submap_2d.grid());
+   }
+ }
+ 
+@@ -151,7 +151,7 @@ void ActiveSubmaps2D::InsertRangeData(const sensor::RangeData& range_data) {
+ 
+ std::unique_ptr<RangeDataInserterInterface>
+ ActiveSubmaps2D::CreateRangeDataInserter() {
+-  return common::make_unique<ProbabilityGridRangeDataInserter2D>(
++  return std::make_unique<ProbabilityGridRangeDataInserter2D>(
+       options_.range_data_inserter_options()
+           .probability_grid_range_data_inserter_options_2d());
+ }
+@@ -160,7 +160,7 @@ std::unique_ptr<GridInterface> ActiveSubmaps2D::CreateGrid(
+     const Eigen::Vector2f& origin) {
+   constexpr int kInitialSubmapSize = 100;
+   float resolution = options_.grid_options_2d().resolution();
+-  return common::make_unique<ProbabilityGrid>(
++  return std::make_unique<ProbabilityGrid>(
+       MapLimits(resolution,
+                 origin.cast<double>() + 0.5 * kInitialSubmapSize * resolution *
+                                             Eigen::Vector2d::Ones(),
+@@ -181,7 +181,7 @@ void ActiveSubmaps2D::AddSubmap(const Eigen::Vector2f& origin) {
+     FinishSubmap();
+   }
+ 
+-  submaps_.push_back(common::make_unique<Submap2D>(
++  submaps_.push_back(std::make_unique<Submap2D>(
+       origin, std::unique_ptr<Grid2D>(
+                   static_cast<Grid2D*>(CreateGrid(origin).release()))));
+   LOG(INFO) << "Added submap " << matching_submap_index_ + submaps_.size();
+diff --git a/cartographer/mapping/2d/submap_2d_test.cc b/cartographer/mapping/2d/submap_2d_test.cc
+index c662b16..46da0d6 100644
+--- a/cartographer/mapping/2d/submap_2d_test.cc
++++ b/cartographer/mapping/2d/submap_2d_test.cc
+@@ -79,7 +79,7 @@ TEST(Submap2DTest, ToFromProto) {
+   MapLimits expected_map_limits(1., Eigen::Vector2d(2., 3.),
+                                 CellLimits(100, 110));
+   Submap2D expected(Eigen::Vector2f(4.f, 5.f),
+-                    common::make_unique<ProbabilityGrid>(expected_map_limits));
++                    std::make_unique<ProbabilityGrid>(expected_map_limits));
+   proto::Submap proto;
+   expected.ToProto(&proto, true /* include_probability_grid_data */);
+   EXPECT_TRUE(proto.has_submap_2d());
+diff --git a/cartographer/mapping/3d/hybrid_grid.h b/cartographer/mapping/3d/hybrid_grid.h
+index 423f9c9..4e3484b 100644
+--- a/cartographer/mapping/3d/hybrid_grid.h
++++ b/cartographer/mapping/3d/hybrid_grid.h
+@@ -169,7 +169,7 @@ class NestedGrid {
+     std::unique_ptr<WrappedGrid>& meta_cell =
+         meta_cells_[ToFlatIndex(meta_index, kBits)];
+     if (meta_cell == nullptr) {
+-      meta_cell = common::make_unique<WrappedGrid>();
++      meta_cell = std::make_unique<WrappedGrid>();
+     }
+     const Eigen::Array3i inner_index =
+         index - meta_index * WrappedGrid::grid_size();
+@@ -292,7 +292,7 @@ class DynamicGrid {
+     std::unique_ptr<WrappedGrid>& meta_cell =
+         meta_cells_[ToFlatIndex(meta_index, bits_)];
+     if (meta_cell == nullptr) {
+-      meta_cell = common::make_unique<WrappedGrid>();
++      meta_cell = std::make_unique<WrappedGrid>();
+     }
+     const Eigen::Array3i inner_index =
+         shifted_index - meta_index * WrappedGrid::grid_size();
+diff --git a/cartographer/mapping/3d/submap_3d.cc b/cartographer/mapping/3d/submap_3d.cc
+index af57a30..1365513 100644
+--- a/cartographer/mapping/3d/submap_3d.cc
++++ b/cartographer/mapping/3d/submap_3d.cc
+@@ -199,16 +199,16 @@ Submap3D::Submap3D(const float high_resolution, const float low_resolution,
+                    const transform::Rigid3d& local_submap_pose)
+     : Submap(local_submap_pose),
+       high_resolution_hybrid_grid_(
+-          common::make_unique<HybridGrid>(high_resolution)),
++          std::make_unique<HybridGrid>(high_resolution)),
+       low_resolution_hybrid_grid_(
+-          common::make_unique<HybridGrid>(low_resolution)) {}
++          std::make_unique<HybridGrid>(low_resolution)) {}
+ 
+ Submap3D::Submap3D(const proto::Submap3D& proto)
+     : Submap(transform::ToRigid3(proto.local_pose())),
+       high_resolution_hybrid_grid_(
+-          common::make_unique<HybridGrid>(proto.high_resolution_hybrid_grid())),
++          std::make_unique<HybridGrid>(proto.high_resolution_hybrid_grid())),
+       low_resolution_hybrid_grid_(
+-          common::make_unique<HybridGrid>(proto.low_resolution_hybrid_grid())) {
++          std::make_unique<HybridGrid>(proto.low_resolution_hybrid_grid())) {
+   set_num_range_data(proto.num_range_data());
+   set_finished(proto.finished());
+ }
+@@ -235,14 +235,14 @@ void Submap3D::UpdateFromProto(const proto::Submap& proto) {
+   if (submap_3d.has_high_resolution_hybrid_grid()) {
+     high_resolution_hybrid_grid_ =
+         submap_3d.has_high_resolution_hybrid_grid()
+-            ? common::make_unique<HybridGrid>(
++            ? std::make_unique<HybridGrid>(
+                   submap_3d.high_resolution_hybrid_grid())
+             : nullptr;
+   }
+   if (submap_3d.has_low_resolution_hybrid_grid()) {
+     low_resolution_hybrid_grid_ =
+         submap_3d.has_low_resolution_hybrid_grid()
+-            ? common::make_unique<HybridGrid>(
++            ? std::make_unique<HybridGrid>(
+                   submap_3d.low_resolution_hybrid_grid())
+             : nullptr;
+   }
+diff --git a/cartographer/mapping/id.h b/cartographer/mapping/id.h
+index 49662c2..2fe3bef 100644
+--- a/cartographer/mapping/id.h
++++ b/cartographer/mapping/id.h
+@@ -175,7 +175,7 @@ class MapById {
+     }
+ 
+     std::unique_ptr<const IdDataReference> operator->() const {
+-      return common::make_unique<const IdDataReference>(this->operator*());
++      return std::make_unique<const IdDataReference>(this->operator*());
+     }
+ 
+     ConstIterator& operator++() {
+diff --git a/cartographer/mapping/imu_tracker_test.cc b/cartographer/mapping/imu_tracker_test.cc
+index 8cccc19..bd6f261 100644
+--- a/cartographer/mapping/imu_tracker_test.cc
++++ b/cartographer/mapping/imu_tracker_test.cc
+@@ -31,7 +31,7 @@ constexpr int kSteps = 10;
+ class ImuTrackerTest : public ::testing::Test {
+  protected:
+   void SetUp() override {
+-    imu_tracker_ = common::make_unique<ImuTracker>(kGravityTimeConstant, time_);
++    imu_tracker_ = std::make_unique<ImuTracker>(kGravityTimeConstant, time_);
+     angular_velocity_ = Eigen::Vector3d(0, 0, 0);
+     linear_acceleration_ = Eigen::Vector3d(0, 0, 9.9);
+     EXPECT_NEAR(0.,
+diff --git a/cartographer/mapping/internal/2d/local_slam_result_2d.cc b/cartographer/mapping/internal/2d/local_slam_result_2d.cc
+index bd7c93e..e502fe9 100644
+--- a/cartographer/mapping/internal/2d/local_slam_result_2d.cc
++++ b/cartographer/mapping/internal/2d/local_slam_result_2d.cc
+@@ -23,7 +23,7 @@ namespace mapping {
+ void LocalSlamResult2D::AddToTrajectoryBuilder(
+     TrajectoryBuilderInterface* const trajectory_builder) {
+   trajectory_builder->AddLocalSlamResultData(
+-      common::make_unique<LocalSlamResult2D>(*this));
++      std::make_unique<LocalSlamResult2D>(*this));
+ }
+ 
+ void LocalSlamResult2D::AddToPoseGraph(int trajectory_id,
+diff --git a/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc b/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc
+index 40459ec..49f1afd 100644
+--- a/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc
++++ b/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc
+@@ -85,7 +85,7 @@ std::unique_ptr<transform::Rigid2d> LocalTrajectoryBuilder2D::ScanMatch(
+     kFastCorrelativeScanMatcherScoreMetric->Observe(score);
+   }
+ 
+-  auto pose_observation = common::make_unique<transform::Rigid2d>();
++  auto pose_observation = std::make_unique<transform::Rigid2d>();
+   ceres::Solver::Summary summary;
+   ceres_scan_matcher_.Match(pose_prediction.translation(), initial_ceres_pose,
+                             filtered_gravity_aligned_point_cloud,
+@@ -242,7 +242,7 @@ LocalTrajectoryBuilder2D::AddAccumulatedRangeData(
+   auto duration = std::chrono::steady_clock::now() - accumulation_started_;
+   kLocalSlamLatencyMetric->Set(
+       std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+-  return common::make_unique<MatchingResult>(
++  return std::make_unique<MatchingResult>(
+       MatchingResult{time, pose_estimate, std::move(range_data_in_local),
+                      std::move(insertion_result)});
+ }
+@@ -270,7 +270,7 @@ LocalTrajectoryBuilder2D::InsertIntoSubmap(
+   const sensor::PointCloud filtered_gravity_aligned_point_cloud =
+       adaptive_voxel_filter.Filter(gravity_aligned_range_data.returns);
+ 
+-  return common::make_unique<InsertionResult>(InsertionResult{
++  return std::make_unique<InsertionResult>(InsertionResult{
+       std::make_shared<const TrajectoryNode::Data>(TrajectoryNode::Data{
+           time,
+           gravity_alignment,
+@@ -307,7 +307,7 @@ void LocalTrajectoryBuilder2D::InitializeExtrapolator(const common::Time time) {
+   // in time and thus the last two are used.
+   constexpr double kExtrapolationEstimationTimeSec = 0.001;
+   // TODO(gaschler): Consider using InitializeWithImu as 3D does.
+-  extrapolator_ = common::make_unique<PoseExtrapolator>(
++  extrapolator_ = std::make_unique<PoseExtrapolator>(
+       ::cartographer::common::FromSeconds(kExtrapolationEstimationTimeSec),
+       options_.imu_gravity_time_constant());
+   extrapolator_->AddPose(time, transform::Rigid3d::Identity());
+diff --git a/cartographer/mapping/internal/2d/pose_graph_2d.cc b/cartographer/mapping/internal/2d/pose_graph_2d.cc
+index 49d0c0c..9609726 100644
+--- a/cartographer/mapping/internal/2d/pose_graph_2d.cc
++++ b/cartographer/mapping/internal/2d/pose_graph_2d.cc
+@@ -147,7 +147,7 @@ void PoseGraph2D::AddTrajectoryIfNeeded(const int trajectory_id) {
+   // Make sure we have a sampler for this trajectory.
+   if (!global_localization_samplers_[trajectory_id]) {
+     global_localization_samplers_[trajectory_id] =
+-        common::make_unique<common::FixedRatioSampler>(
++        std::make_unique<common::FixedRatioSampler>(
+             options_.global_sampling_ratio());
+   }
+ }
+@@ -300,7 +300,7 @@ void PoseGraph2D::DispatchOptimization() {
+   run_loop_closure_ = true;
+   // If there is a 'work_queue_' already, some other thread will take care.
+   if (work_queue_ == nullptr) {
+-    work_queue_ = common::make_unique<std::deque<std::function<void()>>>();
++    work_queue_ = std::make_unique<std::deque<std::function<void()>>>();
+     constraint_builder_.WhenDone(
+         std::bind(&PoseGraph2D::HandleWorkQueue, this, std::placeholders::_1));
+   }
+diff --git a/cartographer/mapping/internal/2d/pose_graph_2d_test.cc b/cartographer/mapping/internal/2d/pose_graph_2d_test.cc
+index bceb588..0c5f165 100644
+--- a/cartographer/mapping/internal/2d/pose_graph_2d_test.cc
++++ b/cartographer/mapping/internal/2d/pose_graph_2d_test.cc
+@@ -64,7 +64,7 @@ class PoseGraph2DTest : public ::testing::Test {
+               },
+             },
+           })text");
+-      active_submaps_ = common::make_unique<ActiveSubmaps2D>(
++      active_submaps_ = std::make_unique<ActiveSubmaps2D>(
+           mapping::CreateSubmapsOptions2D(parameter_dictionary.get()));
+     }
+ 
+@@ -141,9 +141,9 @@ class PoseGraph2DTest : public ::testing::Test {
+             global_constraint_search_after_n_seconds = 10.0,
+           })text");
+       auto options = CreatePoseGraphOptions(parameter_dictionary.get());
+-      pose_graph_ = common::make_unique<PoseGraph2D>(
++      pose_graph_ = std::make_unique<PoseGraph2D>(
+           options,
+-          common::make_unique<optimization::OptimizationProblem2D>(
++          std::make_unique<optimization::OptimizationProblem2D>(
+               options.optimization_problem_options()),
+           &thread_pool_);
+     }
+diff --git a/cartographer/mapping/internal/2d/scan_matching/ceres_scan_matcher_2d_test.cc b/cartographer/mapping/internal/2d/scan_matching/ceres_scan_matcher_2d_test.cc
+index 51cb1c6..6b736c6 100644
+--- a/cartographer/mapping/internal/2d/scan_matching/ceres_scan_matcher_2d_test.cc
++++ b/cartographer/mapping/internal/2d/scan_matching/ceres_scan_matcher_2d_test.cc
+@@ -56,7 +56,7 @@ class CeresScanMatcherTest : public ::testing::Test {
+         })text");
+     const proto::CeresScanMatcherOptions2D options =
+         CreateCeresScanMatcherOptions2D(parameter_dictionary.get());
+-    ceres_scan_matcher_ = common::make_unique<CeresScanMatcher2D>(options);
++    ceres_scan_matcher_ = std::make_unique<CeresScanMatcher2D>(options);
+   }
+ 
+   void TestFromInitialPose(const transform::Rigid2d& initial_pose) {
+diff --git a/cartographer/mapping/internal/2d/scan_matching/fast_correlative_scan_matcher_2d.cc b/cartographer/mapping/internal/2d/scan_matching/fast_correlative_scan_matcher_2d.cc
+index d0075a0..10563a0 100644
+--- a/cartographer/mapping/internal/2d/scan_matching/fast_correlative_scan_matcher_2d.cc
++++ b/cartographer/mapping/internal/2d/scan_matching/fast_correlative_scan_matcher_2d.cc
+@@ -191,7 +191,7 @@ FastCorrelativeScanMatcher2D::FastCorrelativeScanMatcher2D(
+     : options_(options),
+       limits_(grid.limits()),
+       precomputation_grid_stack_(
+-          common::make_unique<PrecomputationGridStack2D>(grid, options)) {}
++          std::make_unique<PrecomputationGridStack2D>(grid, options)) {}
+ 
+ FastCorrelativeScanMatcher2D::~FastCorrelativeScanMatcher2D() {}
+ 
+diff --git a/cartographer/mapping/internal/2d/scan_matching/real_time_correlative_scan_matcher_2d_test.cc b/cartographer/mapping/internal/2d/scan_matching/real_time_correlative_scan_matcher_2d_test.cc
+index 5b3d136..ad3d5bb 100644
+--- a/cartographer/mapping/internal/2d/scan_matching/real_time_correlative_scan_matcher_2d_test.cc
++++ b/cartographer/mapping/internal/2d/scan_matching/real_time_correlative_scan_matcher_2d_test.cc
+@@ -47,7 +47,7 @@ class RealTimeCorrelativeScanMatcherTest : public ::testing::Test {
+           "miss_probability = 0.4, "
+           "}");
+       range_data_inserter_ =
+-          common::make_unique<ProbabilityGridRangeDataInserter2D>(
++          std::make_unique<ProbabilityGridRangeDataInserter2D>(
+               CreateProbabilityGridRangeDataInserterOptions2D(
+                   parameter_dictionary.get()));
+     }
+@@ -71,7 +71,7 @@ class RealTimeCorrelativeScanMatcherTest : public ::testing::Test {
+           "rotation_delta_cost_weight = 0., "
+           "}");
+       real_time_correlative_scan_matcher_ =
+-          common::make_unique<RealTimeCorrelativeScanMatcher2D>(
++          std::make_unique<RealTimeCorrelativeScanMatcher2D>(
+               CreateRealTimeCorrelativeScanMatcherOptions(
+                   parameter_dictionary.get()));
+     }
+diff --git a/cartographer/mapping/internal/3d/local_slam_result_3d.cc b/cartographer/mapping/internal/3d/local_slam_result_3d.cc
+index 0f9d70b..75fc5e6 100644
+--- a/cartographer/mapping/internal/3d/local_slam_result_3d.cc
++++ b/cartographer/mapping/internal/3d/local_slam_result_3d.cc
+@@ -23,7 +23,7 @@ namespace mapping {
+ void LocalSlamResult3D::AddToTrajectoryBuilder(
+     TrajectoryBuilderInterface* const trajectory_builder) {
+   trajectory_builder->AddLocalSlamResultData(
+-      common::make_unique<LocalSlamResult3D>(*this));
++      std::make_unique<LocalSlamResult3D>(*this));
+ }
+ 
+ void LocalSlamResult3D::AddToPoseGraph(int trajectory_id,
+diff --git a/cartographer/mapping/internal/3d/local_trajectory_builder_3d.cc b/cartographer/mapping/internal/3d/local_trajectory_builder_3d.cc
+index d332663..4679a04 100644
+--- a/cartographer/mapping/internal/3d/local_trajectory_builder_3d.cc
++++ b/cartographer/mapping/internal/3d/local_trajectory_builder_3d.cc
+@@ -44,10 +44,10 @@ LocalTrajectoryBuilder3D::LocalTrajectoryBuilder3D(
+       active_submaps_(options.submaps_options()),
+       motion_filter_(options.motion_filter_options()),
+       real_time_correlative_scan_matcher_(
+-          common::make_unique<scan_matching::RealTimeCorrelativeScanMatcher3D>(
++          std::make_unique<scan_matching::RealTimeCorrelativeScanMatcher3D>(
+               options_.real_time_correlative_scan_matcher_options())),
+       ceres_scan_matcher_(
+-          common::make_unique<scan_matching::CeresScanMatcher3D>(
++          std::make_unique<scan_matching::CeresScanMatcher3D>(
+               options_.ceres_scan_matcher_options())),
+       accumulated_range_data_{Eigen::Vector3f::Zero(), {}, {}},
+       range_data_collator_(expected_range_sensor_ids) {}
+@@ -242,7 +242,7 @@ LocalTrajectoryBuilder3D::AddAccumulatedRangeData(
+   auto duration = std::chrono::steady_clock::now() - accumulation_started_;
+   kLocalSlamLatencyMetric->Set(
+       std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+-  return common::make_unique<MatchingResult>(MatchingResult{
++  return std::make_unique<MatchingResult>(MatchingResult{
+       time, pose_estimate, std::move(filtered_range_data_in_local),
+       std::move(insertion_result)});
+ }
+@@ -284,7 +284,7 @@ LocalTrajectoryBuilder3D::InsertIntoSubmap(
+               filtered_range_data_in_tracking.returns,
+               transform::Rigid3f::Rotation(gravity_alignment.cast<float>())),
+           options_.rotational_histogram_size());
+-  return common::make_unique<InsertionResult>(
++  return std::make_unique<InsertionResult>(
+       InsertionResult{std::make_shared<const mapping::TrajectoryNode::Data>(
+                           mapping::TrajectoryNode::Data{
+                               time,
+diff --git a/cartographer/mapping/internal/3d/pose_graph_3d.cc b/cartographer/mapping/internal/3d/pose_graph_3d.cc
+index a2db4e7..6c713d8 100644
+--- a/cartographer/mapping/internal/3d/pose_graph_3d.cc
++++ b/cartographer/mapping/internal/3d/pose_graph_3d.cc
+@@ -145,7 +145,7 @@ void PoseGraph3D::AddTrajectoryIfNeeded(const int trajectory_id) {
+   // Make sure we have a sampler for this trajectory.
+   if (!global_localization_samplers_[trajectory_id]) {
+     global_localization_samplers_[trajectory_id] =
+-        common::make_unique<common::FixedRatioSampler>(
++        std::make_unique<common::FixedRatioSampler>(
+             options_.global_sampling_ratio());
+   }
+ }
+@@ -314,7 +314,7 @@ void PoseGraph3D::DispatchOptimization() {
+   run_loop_closure_ = true;
+   // If there is a 'work_queue_' already, some other thread will take care.
+   if (work_queue_ == nullptr) {
+-    work_queue_ = common::make_unique<std::deque<std::function<void()>>>();
++    work_queue_ = std::make_unique<std::deque<std::function<void()>>>();
+     constraint_builder_.WhenDone(
+         std::bind(&PoseGraph3D::HandleWorkQueue, this, std::placeholders::_1));
+   }
+diff --git a/cartographer/mapping/internal/3d/pose_graph_3d_test.cc b/cartographer/mapping/internal/3d/pose_graph_3d_test.cc
+index 286437e..3fe6558 100644
+--- a/cartographer/mapping/internal/3d/pose_graph_3d_test.cc
++++ b/cartographer/mapping/internal/3d/pose_graph_3d_test.cc
+@@ -57,7 +57,7 @@ class PoseGraph3DForTesting : public PoseGraph3D {
+ class PoseGraph3DTest : public ::testing::Test {
+  protected:
+   PoseGraph3DTest()
+-      : thread_pool_(common::make_unique<common::ThreadPool>(1)) {}
++      : thread_pool_(std::make_unique<common::ThreadPool>(1)) {}
+ 
+   void SetUp() override {
+     const std::string kPoseGraphLua = R"text(
+@@ -69,17 +69,17 @@ class PoseGraph3DTest : public ::testing::Test {
+ 
+   void BuildPoseGraph() {
+     auto optimization_problem =
+-        common::make_unique<optimization::OptimizationProblem3D>(
++        std::make_unique<optimization::OptimizationProblem3D>(
+             pose_graph_options_.optimization_problem_options());
+-    pose_graph_ = common::make_unique<PoseGraph3DForTesting>(
++    pose_graph_ = std::make_unique<PoseGraph3DForTesting>(
+         pose_graph_options_, std::move(optimization_problem),
+         thread_pool_.get());
+   }
+ 
+   void BuildPoseGraphWithFakeOptimization() {
+     auto optimization_problem =
+-        common::make_unique<MockOptimizationProblem3D>();
+-    pose_graph_ = common::make_unique<PoseGraph3DForTesting>(
++        std::make_unique<MockOptimizationProblem3D>();
++    pose_graph_ = std::make_unique<PoseGraph3DForTesting>(
+         pose_graph_options_, std::move(optimization_problem),
+         thread_pool_.get());
+   }
+@@ -158,7 +158,7 @@ TEST_F(PoseGraph3DTest, PureLocalizationTrimmer) {
+       pose_graph_->AddSerializedConstraints(FromProto(proto.constraint()));
+     }
+   }
+-  pose_graph_->AddTrimmer(common::make_unique<PureLocalizationTrimmer>(
++  pose_graph_->AddTrimmer(std::make_unique<PureLocalizationTrimmer>(
+       trajectory_id, num_submaps_to_keep));
+   pose_graph_->WaitForAllComputations();
+   EXPECT_EQ(
+@@ -236,7 +236,7 @@ TEST_F(PoseGraph3DTest, EvenSubmapTrimmer) {
+     }
+   }
+   pose_graph_->AddTrimmer(
+-      common::make_unique<EvenSubmapTrimmer>(trajectory_id));
++      std::make_unique<EvenSubmapTrimmer>(trajectory_id));
+   pose_graph_->WaitForAllComputations();
+   EXPECT_EQ(
+       pose_graph_->GetAllSubmapPoses().SizeOfTrajectoryOrZero(trajectory_id),
+diff --git a/cartographer/mapping/internal/3d/scan_matching/ceres_scan_matcher_3d.cc b/cartographer/mapping/internal/3d/scan_matching/ceres_scan_matcher_3d.cc
+index ea8892c..ed81b94 100644
+--- a/cartographer/mapping/internal/3d/scan_matching/ceres_scan_matcher_3d.cc
++++ b/cartographer/mapping/internal/3d/scan_matching/ceres_scan_matcher_3d.cc
+@@ -80,10 +80,10 @@ void CeresScanMatcher3D::Match(
+       initial_pose_estimate, nullptr /* translation_parameterization */,
+       options_.only_optimize_yaw()
+           ? std::unique_ptr<ceres::LocalParameterization>(
+-                common::make_unique<ceres::AutoDiffLocalParameterization<
++                std::make_unique<ceres::AutoDiffLocalParameterization<
+                     YawOnlyQuaternionPlus, 4, 1>>())
+           : std::unique_ptr<ceres::LocalParameterization>(
+-                common::make_unique<ceres::QuaternionParameterization>()),
++                std::make_unique<ceres::QuaternionParameterization>()),
+       &problem);
+ 
+   CHECK_EQ(options_.occupied_space_weight_size(),
+diff --git a/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d.cc b/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d.cc
+index 66e4fbe..21c7196 100644
+--- a/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d.cc
++++ b/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d.cc
+@@ -136,7 +136,7 @@ FastCorrelativeScanMatcher3D::FastCorrelativeScanMatcher3D(
+       resolution_(hybrid_grid.resolution()),
+       width_in_voxels_(hybrid_grid.grid_size()),
+       precomputation_grid_stack_(
+-          common::make_unique<PrecomputationGridStack3D>(hybrid_grid, options)),
++          std::make_unique<PrecomputationGridStack3D>(hybrid_grid, options)),
+       low_resolution_hybrid_grid_(low_resolution_hybrid_grid),
+       rotational_scan_matcher_(HistogramsAtAnglesFromNodes(nodes)) {}
+ 
+@@ -206,7 +206,7 @@ FastCorrelativeScanMatcher3D::MatchWithSearchParameters(
+       search_parameters, discrete_scans, lowest_resolution_candidates,
+       precomputation_grid_stack_->max_depth(), min_score);
+   if (best_candidate.score > min_score) {
+-    return common::make_unique<Result>(Result{
++    return std::make_unique<Result>(Result{
+         best_candidate.score,
+         GetPoseFromCandidate(discrete_scans, best_candidate).cast<double>(),
+         discrete_scans[best_candidate.scan_index].rotational_score,
+diff --git a/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d_test.cc b/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d_test.cc
+index 786e3b8..ea35200 100644
+--- a/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d_test.cc
++++ b/cartographer/mapping/internal/3d/scan_matching/fast_correlative_scan_matcher_3d_test.cc
+@@ -96,7 +96,7 @@ class FastCorrelativeScanMatcher3DTest : public ::testing::Test {
+   std::unique_ptr<FastCorrelativeScanMatcher3D> GetFastCorrelativeScanMatcher(
+       const proto::FastCorrelativeScanMatcherOptions3D& options,
+       const transform::Rigid3f& pose) {
+-    hybrid_grid_ = common::make_unique<HybridGrid>(0.05f);
++    hybrid_grid_ = std::make_unique<HybridGrid>(0.05f);
+     range_data_inserter_.Insert(
+         sensor::RangeData{pose.translation(),
+                           sensor::TransformPointCloud(point_cloud_, pose),
+@@ -104,7 +104,7 @@ class FastCorrelativeScanMatcher3DTest : public ::testing::Test {
+         hybrid_grid_.get());
+     hybrid_grid_->FinishUpdate();
+ 
+-    return common::make_unique<FastCorrelativeScanMatcher3D>(
++    return std::make_unique<FastCorrelativeScanMatcher3D>(
+         *hybrid_grid_, hybrid_grid_.get(),
+         std::vector<TrajectoryNode>(
+             {{std::make_shared<const TrajectoryNode::Data>(
+diff --git a/cartographer/mapping/internal/constraints/constraint_builder_2d.cc b/cartographer/mapping/internal/constraints/constraint_builder_2d.cc
+index c621385..19171fb 100644
+--- a/cartographer/mapping/internal/constraints/constraint_builder_2d.cc
++++ b/cartographer/mapping/internal/constraints/constraint_builder_2d.cc
+@@ -58,8 +58,8 @@ ConstraintBuilder2D::ConstraintBuilder2D(
+     common::ThreadPoolInterface* const thread_pool)
+     : options_(options),
+       thread_pool_(thread_pool),
+-      finish_node_task_(common::make_unique<common::Task>()),
+-      when_done_task_(common::make_unique<common::Task>()),
++      finish_node_task_(std::make_unique<common::Task>()),
++      when_done_task_(std::make_unique<common::Task>()),
+       sampler_(options.sampling_ratio()),
+       ceres_scan_matcher_(options.ceres_scan_matcher_options()) {}
+ 
+@@ -92,7 +92,7 @@ void ConstraintBuilder2D::MaybeAddConstraint(
+   auto* const constraint = &constraints_.back();
+   const auto* scan_matcher =
+       DispatchScanMatcherConstruction(submap_id, submap->grid());
+-  auto constraint_task = common::make_unique<common::Task>();
++  auto constraint_task = std::make_unique<common::Task>();
+   constraint_task->SetWorkItem([=]() EXCLUDES(mutex_) {
+     ComputeConstraint(submap_id, submap, node_id, false, /* match_full_submap */
+                       constant_data, initial_relative_pose, *scan_matcher,
+@@ -117,7 +117,7 @@ void ConstraintBuilder2D::MaybeAddGlobalConstraint(
+   auto* const constraint = &constraints_.back();
+   const auto* scan_matcher =
+       DispatchScanMatcherConstruction(submap_id, submap->grid());
+-  auto constraint_task = common::make_unique<common::Task>();
++  auto constraint_task = std::make_unique<common::Task>();
+   constraint_task->SetWorkItem([=]() EXCLUDES(mutex_) {
+     ComputeConstraint(submap_id, submap, node_id, true, /* match_full_submap */
+                       constant_data, transform::Rigid2d::Identity(),
+@@ -138,7 +138,7 @@ void ConstraintBuilder2D::NotifyEndOfNode() {
+   });
+   auto finish_node_task_handle =
+       thread_pool_->Schedule(std::move(finish_node_task_));
+-  finish_node_task_ = common::make_unique<common::Task>();
++  finish_node_task_ = std::make_unique<common::Task>();
+   when_done_task_->AddDependency(finish_node_task_handle);
+   ++num_started_nodes_;
+ }
+@@ -149,11 +149,11 @@ void ConstraintBuilder2D::WhenDone(
+   CHECK(when_done_ == nullptr);
+   // TODO(gaschler): Consider using just std::function, it can also be empty.
+   when_done_ =
+-      common::make_unique<std::function<void(const Result&)>>(callback);
++      std::make_unique<std::function<void(const Result&)>>(callback);
+   CHECK(when_done_task_ != nullptr);
+   when_done_task_->SetWorkItem([this] { RunWhenDoneCallback(); });
+   thread_pool_->Schedule(std::move(when_done_task_));
+-  when_done_task_ = common::make_unique<common::Task>();
++  when_done_task_ = std::make_unique<common::Task>();
+ }
+ 
+ const ConstraintBuilder2D::SubmapScanMatcher*
+@@ -165,11 +165,11 @@ ConstraintBuilder2D::DispatchScanMatcherConstruction(const SubmapId& submap_id,
+   auto& submap_scan_matcher = submap_scan_matchers_[submap_id];
+   submap_scan_matcher.grid = grid;
+   auto& scan_matcher_options = options_.fast_correlative_scan_matcher_options();
+-  auto scan_matcher_task = common::make_unique<common::Task>();
++  auto scan_matcher_task = std::make_unique<common::Task>();
+   scan_matcher_task->SetWorkItem(
+       [&submap_scan_matcher, &scan_matcher_options]() {
+         submap_scan_matcher.fast_correlative_scan_matcher =
+-            common::make_unique<scan_matching::FastCorrelativeScanMatcher2D>(
++            std::make_unique<scan_matching::FastCorrelativeScanMatcher2D>(
+                 *submap_scan_matcher.grid, scan_matcher_options);
+       });
+   submap_scan_matcher.creation_task_handle =
+diff --git a/cartographer/mapping/internal/constraints/constraint_builder_2d_test.cc b/cartographer/mapping/internal/constraints/constraint_builder_2d_test.cc
+index c13cfbb..bdf4459 100644
+--- a/cartographer/mapping/internal/constraints/constraint_builder_2d_test.cc
++++ b/cartographer/mapping/internal/constraints/constraint_builder_2d_test.cc
+@@ -45,7 +45,7 @@ class ConstraintBuilder2DTest : public ::testing::Test {
+             POSE_GRAPH.constraint_builder.min_score = 0
+             POSE_GRAPH.constraint_builder.global_localization_min_score = 0
+             return POSE_GRAPH.constraint_builder)text");
+-    constraint_builder_ = common::make_unique<ConstraintBuilder2D>(
++    constraint_builder_ = std::make_unique<ConstraintBuilder2D>(
+         CreateConstraintBuilderOptions(constraint_builder_parameters.get()),
+         &thread_pool_);
+   }
+@@ -74,7 +74,7 @@ TEST_F(ConstraintBuilder2DTest, FindsConstraints) {
+   SubmapId submap_id{0, 1};
+   MapLimits map_limits(1., Eigen::Vector2d(2., 3.), CellLimits(100, 110));
+   Submap2D submap(Eigen::Vector2f(4.f, 5.f),
+-                  common::make_unique<ProbabilityGrid>(map_limits));
++                  std::make_unique<ProbabilityGrid>(map_limits));
+   int expected_nodes = 0;
+   for (int i = 0; i < 2; ++i) {
+     EXPECT_EQ(constraint_builder_->GetNumFinishedNodes(), expected_nodes);
+diff --git a/cartographer/mapping/internal/constraints/constraint_builder_3d.cc b/cartographer/mapping/internal/constraints/constraint_builder_3d.cc
+index 8510631..9d81c7a 100644
+--- a/cartographer/mapping/internal/constraints/constraint_builder_3d.cc
++++ b/cartographer/mapping/internal/constraints/constraint_builder_3d.cc
+@@ -60,8 +60,8 @@ ConstraintBuilder3D::ConstraintBuilder3D(
+     common::ThreadPoolInterface* const thread_pool)
+     : options_(options),
+       thread_pool_(thread_pool),
+-      finish_node_task_(common::make_unique<common::Task>()),
+-      when_done_task_(common::make_unique<common::Task>()),
++      finish_node_task_(std::make_unique<common::Task>()),
++      when_done_task_(std::make_unique<common::Task>()),
+       sampler_(options.sampling_ratio()),
+       ceres_scan_matcher_(options.ceres_scan_matcher_options_3d()) {}
+ 
+@@ -96,7 +96,7 @@ void ConstraintBuilder3D::MaybeAddConstraint(
+   auto* const constraint = &constraints_.back();
+   const auto* scan_matcher =
+       DispatchScanMatcherConstruction(submap_id, submap_nodes, submap);
+-  auto constraint_task = common::make_unique<common::Task>();
++  auto constraint_task = std::make_unique<common::Task>();
+   constraint_task->SetWorkItem([=]() EXCLUDES(mutex_) {
+     ComputeConstraint(submap_id, node_id, false, /* match_full_submap */
+                       constant_data, global_node_pose, global_submap_pose,
+@@ -124,7 +124,7 @@ void ConstraintBuilder3D::MaybeAddGlobalConstraint(
+   auto* const constraint = &constraints_.back();
+   const auto* scan_matcher =
+       DispatchScanMatcherConstruction(submap_id, submap_nodes, submap);
+-  auto constraint_task = common::make_unique<common::Task>();
++  auto constraint_task = std::make_unique<common::Task>();
+   constraint_task->SetWorkItem([=]() EXCLUDES(mutex_) {
+     ComputeConstraint(submap_id, node_id, true, /* match_full_submap */
+                       constant_data,
+@@ -147,7 +147,7 @@ void ConstraintBuilder3D::NotifyEndOfNode() {
+   });
+   auto finish_node_task_handle =
+       thread_pool_->Schedule(std::move(finish_node_task_));
+-  finish_node_task_ = common::make_unique<common::Task>();
++  finish_node_task_ = std::make_unique<common::Task>();
+   when_done_task_->AddDependency(finish_node_task_handle);
+   ++num_started_nodes_;
+ }
+@@ -158,11 +158,11 @@ void ConstraintBuilder3D::WhenDone(
+   CHECK(when_done_ == nullptr);
+   // TODO(gaschler): Consider using just std::function, it can also be empty.
+   when_done_ =
+-      common::make_unique<std::function<void(const Result&)>>(callback);
++      std::make_unique<std::function<void(const Result&)>>(callback);
+   CHECK(when_done_task_ != nullptr);
+   when_done_task_->SetWorkItem([this] { RunWhenDoneCallback(); });
+   thread_pool_->Schedule(std::move(when_done_task_));
+-  when_done_task_ = common::make_unique<common::Task>();
++  when_done_task_ = std::make_unique<common::Task>();
+ }
+ 
+ const ConstraintBuilder3D::SubmapScanMatcher*
+@@ -179,11 +179,11 @@ ConstraintBuilder3D::DispatchScanMatcherConstruction(
+       &submap->low_resolution_hybrid_grid();
+   auto& scan_matcher_options =
+       options_.fast_correlative_scan_matcher_options_3d();
+-  auto scan_matcher_task = common::make_unique<common::Task>();
++  auto scan_matcher_task = std::make_unique<common::Task>();
+   scan_matcher_task->SetWorkItem(
+       [&submap_scan_matcher, &scan_matcher_options, submap_nodes]() {
+         submap_scan_matcher.fast_correlative_scan_matcher =
+-            common::make_unique<scan_matching::FastCorrelativeScanMatcher3D>(
++            std::make_unique<scan_matching::FastCorrelativeScanMatcher3D>(
+                 *submap_scan_matcher.high_resolution_hybrid_grid,
+                 submap_scan_matcher.low_resolution_hybrid_grid, submap_nodes,
+                 scan_matcher_options);
+diff --git a/cartographer/mapping/internal/constraints/constraint_builder_3d_test.cc b/cartographer/mapping/internal/constraints/constraint_builder_3d_test.cc
+index cf9e6d4..551e13b 100644
+--- a/cartographer/mapping/internal/constraints/constraint_builder_3d_test.cc
++++ b/cartographer/mapping/internal/constraints/constraint_builder_3d_test.cc
+@@ -48,7 +48,7 @@ class ConstraintBuilder3DTest : public ::testing::Test {
+     POSE_GRAPH.constraint_builder.fast_correlative_scan_matcher_3d.min_low_resolution_score = 0
+     POSE_GRAPH.constraint_builder.fast_correlative_scan_matcher_3d.min_rotational_score = 0
+     return POSE_GRAPH.constraint_builder)text");
+-    constraint_builder_ = common::make_unique<ConstraintBuilder3D>(
++    constraint_builder_ = std::make_unique<ConstraintBuilder3D>(
+         CreateConstraintBuilderOptions(constraint_builder_parameters.get()),
+         &thread_pool_);
+   }
+diff --git a/cartographer/mapping/internal/global_trajectory_builder.cc b/cartographer/mapping/internal/global_trajectory_builder.cc
+index 5c6afbd..59d504c 100644
+--- a/cartographer/mapping/internal/global_trajectory_builder.cc
++++ b/cartographer/mapping/internal/global_trajectory_builder.cc
+@@ -69,7 +69,7 @@ class GlobalTrajectoryBuilder : public mapping::TrajectoryBuilderInterface {
+           matching_result->insertion_result->constant_data, trajectory_id_,
+           matching_result->insertion_result->insertion_submaps);
+       CHECK_EQ(node_id.trajectory_id, trajectory_id_);
+-      insertion_result = common::make_unique<InsertionResult>(InsertionResult{
++      insertion_result = std::make_unique<InsertionResult>(InsertionResult{
+           node_id, matching_result->insertion_result->constant_data,
+           std::vector<std::shared_ptr<const Submap>>(
+               matching_result->insertion_result->insertion_submaps.begin(),
+@@ -136,7 +136,7 @@ std::unique_ptr<TrajectoryBuilderInterface> CreateGlobalTrajectoryBuilder2D(
+     const int trajectory_id, mapping::PoseGraph2D* const pose_graph,
+     const TrajectoryBuilderInterface::LocalSlamResultCallback&
+         local_slam_result_callback) {
+-  return common::make_unique<
++  return std::make_unique<
+       GlobalTrajectoryBuilder<LocalTrajectoryBuilder2D, mapping::PoseGraph2D>>(
+       std::move(local_trajectory_builder), trajectory_id, pose_graph,
+       local_slam_result_callback);
+@@ -147,7 +147,7 @@ std::unique_ptr<TrajectoryBuilderInterface> CreateGlobalTrajectoryBuilder3D(
+     const int trajectory_id, mapping::PoseGraph3D* const pose_graph,
+     const TrajectoryBuilderInterface::LocalSlamResultCallback&
+         local_slam_result_callback) {
+-  return common::make_unique<
++  return std::make_unique<
+       GlobalTrajectoryBuilder<LocalTrajectoryBuilder3D, mapping::PoseGraph3D>>(
+       std::move(local_trajectory_builder), trajectory_id, pose_graph,
+       local_slam_result_callback);
+diff --git a/cartographer/mapping/internal/optimization/optimization_problem_2d.cc b/cartographer/mapping/internal/optimization/optimization_problem_2d.cc
+index 76da8b0..e4474bf 100644
+--- a/cartographer/mapping/internal/optimization/optimization_problem_2d.cc
++++ b/cartographer/mapping/internal/optimization/optimization_problem_2d.cc
+@@ -120,7 +120,7 @@ void AddLandmarkCostFunctions(
+         C_landmarks->emplace(
+             landmark_id,
+             CeresPose(starting_point, nullptr /* translation_parametrization */,
+-                      common::make_unique<ceres::QuaternionParameterization>(),
++                      std::make_unique<ceres::QuaternionParameterization>(),
+                       problem));
+         if (freeze_landmarks) {
+           problem->SetParameterBlockConstant(
+@@ -328,12 +328,12 @@ std::unique_ptr<transform::Rigid3d> OptimizationProblem2D::InterpolateOdometry(
+   }
+   if (it == odometry_data_.BeginOfTrajectory(trajectory_id)) {
+     if (it->time == time) {
+-      return common::make_unique<transform::Rigid3d>(it->pose);
++      return std::make_unique<transform::Rigid3d>(it->pose);
+     }
+     return nullptr;
+   }
+   const auto prev_it = std::prev(it);
+-  return common::make_unique<transform::Rigid3d>(
++  return std::make_unique<transform::Rigid3d>(
+       Interpolate(transform::TimestampedTransform{prev_it->time, prev_it->pose},
+                   transform::TimestampedTransform{it->time, it->pose}, time)
+           .transform);
+@@ -354,7 +354,7 @@ OptimizationProblem2D::CalculateOdometryBetweenNodes(
+           first_node_odometry->inverse() * (*second_node_odometry) *
+           transform::Rigid3d::Rotation(
+               second_node_data.gravity_alignment.inverse());
+-      return common::make_unique<transform::Rigid3d>(relative_odometry);
++      return std::make_unique<transform::Rigid3d>(relative_odometry);
+     }
+   }
+   return nullptr;
+diff --git a/cartographer/mapping/internal/optimization/optimization_problem_3d.cc b/cartographer/mapping/internal/optimization/optimization_problem_3d.cc
+index 3854bf5..09d3c35 100644
+--- a/cartographer/mapping/internal/optimization/optimization_problem_3d.cc
++++ b/cartographer/mapping/internal/optimization/optimization_problem_3d.cc
+@@ -63,12 +63,12 @@ std::unique_ptr<transform::Rigid3d> Interpolate(
+   }
+   if (it == map_by_time.BeginOfTrajectory(trajectory_id)) {
+     if (it->time == time) {
+-      return common::make_unique<transform::Rigid3d>(it->pose);
++      return std::make_unique<transform::Rigid3d>(it->pose);
+     }
+     return nullptr;
+   }
+   const auto prev_it = std::prev(it);
+-  return common::make_unique<transform::Rigid3d>(
++  return std::make_unique<transform::Rigid3d>(
+       Interpolate(transform::TimestampedTransform{prev_it->time, prev_it->pose},
+                   transform::TimestampedTransform{it->time, it->pose}, time)
+           .transform);
+@@ -85,13 +85,13 @@ std::unique_ptr<transform::Rigid3d> Interpolate(
+   }
+   if (it == map_by_time.BeginOfTrajectory(trajectory_id)) {
+     if (it->time == time) {
+-      return common::make_unique<transform::Rigid3d>(it->pose.value());
++      return std::make_unique<transform::Rigid3d>(it->pose.value());
+     }
+     return nullptr;
+   }
+   const auto prev_it = std::prev(it);
+   if (prev_it->pose.has_value()) {
+-    return common::make_unique<transform::Rigid3d>(
++    return std::make_unique<transform::Rigid3d>(
+         Interpolate(transform::TimestampedTransform{prev_it->time,
+                                                     prev_it->pose.value()},
+                     transform::TimestampedTransform{it->time, it->pose.value()},
+@@ -164,7 +164,7 @@ void AddLandmarkCostFunctions(
+         C_landmarks->emplace(
+             landmark_id,
+             CeresPose(starting_point, nullptr /* translation_parametrization */,
+-                      common::make_unique<ceres::QuaternionParameterization>(),
++                      std::make_unique<ceres::QuaternionParameterization>(),
+                       problem));
+         if (freeze_landmarks) {
+           problem->SetParameterBlockConstant(
+@@ -271,7 +271,7 @@ void OptimizationProblem3D::Solve(
+   const auto translation_parameterization =
+       [this]() -> std::unique_ptr<ceres::LocalParameterization> {
+     return options_.fix_z_in_3d()
+-               ? common::make_unique<ceres::SubsetParameterization>(
++               ? std::make_unique<ceres::SubsetParameterization>(
+                      3, std::vector<int>{2})
+                : nullptr;
+   };
+@@ -294,7 +294,7 @@ void OptimizationProblem3D::Solve(
+           submap_id_data.id,
+           CeresPose(submap_id_data.data.global_pose,
+                     translation_parameterization(),
+-                    common::make_unique<ceres::AutoDiffLocalParameterization<
++                    std::make_unique<ceres::AutoDiffLocalParameterization<
+                         ConstantYawQuaternionPlus, 4, 2>>(),
+                     &problem));
+       problem.SetParameterBlockConstant(
+@@ -304,7 +304,7 @@ void OptimizationProblem3D::Solve(
+           submap_id_data.id,
+           CeresPose(submap_id_data.data.global_pose,
+                     translation_parameterization(),
+-                    common::make_unique<ceres::QuaternionParameterization>(),
++                    std::make_unique<ceres::QuaternionParameterization>(),
+                     &problem));
+     }
+     if (frozen) {
+@@ -320,7 +320,7 @@ void OptimizationProblem3D::Solve(
+     C_nodes.Insert(
+         node_id_data.id,
+         CeresPose(node_id_data.data.global_pose, translation_parameterization(),
+-                  common::make_unique<ceres::QuaternionParameterization>(),
++                  std::make_unique<ceres::QuaternionParameterization>(),
+                   &problem));
+     if (frozen) {
+       problem.SetParameterBlockConstant(C_nodes.at(node_id_data.id).rotation());
+@@ -531,7 +531,7 @@ void OptimizationProblem3D::Solve(
+                         transform::GetYaw(fixed_frame_pose_in_map.rotation()),
+                         Eigen::Vector3d::UnitZ())),
+                 nullptr,
+-                common::make_unique<ceres::AutoDiffLocalParameterization<
++                std::make_unique<ceres::AutoDiffLocalParameterization<
+                     YawOnlyQuaternionPlus, 4, 1>>(),
+                 &problem));
+         fixed_frame_pose_initialized = true;
+@@ -598,7 +598,7 @@ OptimizationProblem3D::CalculateOdometryBetweenNodes(
+     if (first_node_odometry != nullptr && second_node_odometry != nullptr) {
+       const transform::Rigid3d relative_odometry =
+           first_node_odometry->inverse() * (*second_node_odometry);
+-      return common::make_unique<transform::Rigid3d>(relative_odometry);
++      return std::make_unique<transform::Rigid3d>(relative_odometry);
+     }
+   }
+   return nullptr;
+diff --git a/cartographer/mapping/internal/testing/test_helpers.cc b/cartographer/mapping/internal/testing/test_helpers.cc
+index a104fb6..6c5531d 100644
+--- a/cartographer/mapping/internal/testing/test_helpers.cc
++++ b/cartographer/mapping/internal/testing/test_helpers.cc
+@@ -29,12 +29,12 @@ namespace test {
+ 
+ std::unique_ptr<::cartographer::common::LuaParameterDictionary>
+ ResolveLuaParameters(const std::string& lua_code) {
+-  auto file_resolver = ::cartographer::common::make_unique<
++  auto file_resolver = std::make_unique<
+       ::cartographer::common::ConfigurationFileResolver>(
+       std::vector<std::string>{
+           std::string(::cartographer::common::kSourceDirectory) +
+           "/configuration_files"});
+-  return common::make_unique<::cartographer::common::LuaParameterDictionary>(
++  return std::make_unique<::cartographer::common::LuaParameterDictionary>(
+       lua_code, std::move(file_resolver));
+ }
+ 
+diff --git a/cartographer/mapping/map_builder.cc b/cartographer/mapping/map_builder.cc
+index 3ad6de5..8b5d20e 100644
+--- a/cartographer/mapping/map_builder.cc
++++ b/cartographer/mapping/map_builder.cc
+@@ -75,23 +75,23 @@ MapBuilder::MapBuilder(const proto::MapBuilderOptions& options)
+   CHECK(options.use_trajectory_builder_2d() ^
+         options.use_trajectory_builder_3d());
+   if (options.use_trajectory_builder_2d()) {
+-    pose_graph_ = common::make_unique<PoseGraph2D>(
++    pose_graph_ = std::make_unique<PoseGraph2D>(
+         options_.pose_graph_options(),
+-        common::make_unique<optimization::OptimizationProblem2D>(
++        std::make_unique<optimization::OptimizationProblem2D>(
+             options_.pose_graph_options().optimization_problem_options()),
+         &thread_pool_);
+   }
+   if (options.use_trajectory_builder_3d()) {
+-    pose_graph_ = common::make_unique<PoseGraph3D>(
++    pose_graph_ = std::make_unique<PoseGraph3D>(
+         options_.pose_graph_options(),
+-        common::make_unique<optimization::OptimizationProblem3D>(
++        std::make_unique<optimization::OptimizationProblem3D>(
+             options_.pose_graph_options().optimization_problem_options()),
+         &thread_pool_);
+   }
+   if (options.collate_by_trajectory()) {
+-    sensor_collator_ = common::make_unique<sensor::TrajectoryCollator>();
++    sensor_collator_ = std::make_unique<sensor::TrajectoryCollator>();
+   } else {
+-    sensor_collator_ = common::make_unique<sensor::Collator>();
++    sensor_collator_ = std::make_unique<sensor::Collator>();
+   }
+ }
+ 
+@@ -103,13 +103,13 @@ int MapBuilder::AddTrajectoryBuilder(
+   if (options_.use_trajectory_builder_3d()) {
+     std::unique_ptr<LocalTrajectoryBuilder3D> local_trajectory_builder;
+     if (trajectory_options.has_trajectory_builder_3d_options()) {
+-      local_trajectory_builder = common::make_unique<LocalTrajectoryBuilder3D>(
++      local_trajectory_builder = std::make_unique<LocalTrajectoryBuilder3D>(
+           trajectory_options.trajectory_builder_3d_options(),
+           SelectRangeSensorIds(expected_sensor_ids));
+     }
+     DCHECK(dynamic_cast<PoseGraph3D*>(pose_graph_.get()));
+     trajectory_builders_.push_back(
+-        common::make_unique<CollatedTrajectoryBuilder>(
++        std::make_unique<CollatedTrajectoryBuilder>(
+             sensor_collator_.get(), trajectory_id, expected_sensor_ids,
+             CreateGlobalTrajectoryBuilder3D(
+                 std::move(local_trajectory_builder), trajectory_id,
+@@ -118,13 +118,13 @@ int MapBuilder::AddTrajectoryBuilder(
+   } else {
+     std::unique_ptr<LocalTrajectoryBuilder2D> local_trajectory_builder;
+     if (trajectory_options.has_trajectory_builder_2d_options()) {
+-      local_trajectory_builder = common::make_unique<LocalTrajectoryBuilder2D>(
++      local_trajectory_builder = std::make_unique<LocalTrajectoryBuilder2D>(
+           trajectory_options.trajectory_builder_2d_options(),
+           SelectRangeSensorIds(expected_sensor_ids));
+     }
+     DCHECK(dynamic_cast<PoseGraph2D*>(pose_graph_.get()));
+     trajectory_builders_.push_back(
+-        common::make_unique<CollatedTrajectoryBuilder>(
++        std::make_unique<CollatedTrajectoryBuilder>(
+             sensor_collator_.get(), trajectory_id, expected_sensor_ids,
+             CreateGlobalTrajectoryBuilder2D(
+                 std::move(local_trajectory_builder), trajectory_id,
+@@ -134,7 +134,7 @@ int MapBuilder::AddTrajectoryBuilder(
+     if (trajectory_options.has_overlapping_submaps_trimmer_2d()) {
+       const auto& trimmer_options =
+           trajectory_options.overlapping_submaps_trimmer_2d();
+-      pose_graph_->AddTrimmer(common::make_unique<OverlappingSubmapsTrimmer2D>(
++      pose_graph_->AddTrimmer(std::make_unique<OverlappingSubmapsTrimmer2D>(
+           trimmer_options.fresh_submaps_count(),
+           trimmer_options.min_covered_area() /
+               common::Pow2(trajectory_options.trajectory_builder_2d_options()
+@@ -146,7 +146,7 @@ int MapBuilder::AddTrajectoryBuilder(
+   }
+   if (trajectory_options.pure_localization()) {
+     constexpr int kSubmapsToKeep = 3;
+-    pose_graph_->AddTrimmer(common::make_unique<PureLocalizationTrimmer>(
++    pose_graph_->AddTrimmer(std::make_unique<PureLocalizationTrimmer>(
+         trajectory_id, kSubmapsToKeep));
+   }
+   if (trajectory_options.has_initial_trajectory_pose()) {
+diff --git a/cartographer/mapping/map_builder_test.cc b/cartographer/mapping/map_builder_test.cc
+index 3c29164..fc686e1 100644
+--- a/cartographer/mapping/map_builder_test.cc
++++ b/cartographer/mapping/map_builder_test.cc
+@@ -58,7 +58,7 @@ class MapBuilderTest : public ::testing::Test {
+   }
+ 
+   void BuildMapBuilder() {
+-    map_builder_ = common::make_unique<MapBuilder>(map_builder_options_);
++    map_builder_ = std::make_unique<MapBuilder>(map_builder_options_);
+   }
+ 
+   void SetOptionsTo3D() {
+diff --git a/cartographer/mapping/pose_extrapolator.cc b/cartographer/mapping/pose_extrapolator.cc
+index 6898103..12cb820 100644
+--- a/cartographer/mapping/pose_extrapolator.cc
++++ b/cartographer/mapping/pose_extrapolator.cc
+@@ -35,11 +35,11 @@ PoseExtrapolator::PoseExtrapolator(const common::Duration pose_queue_duration,
+ std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitializeWithImu(
+     const common::Duration pose_queue_duration,
+     const double imu_gravity_time_constant, const sensor::ImuData& imu_data) {
+-  auto extrapolator = common::make_unique<PoseExtrapolator>(
++  auto extrapolator = std::make_unique<PoseExtrapolator>(
+       pose_queue_duration, imu_gravity_time_constant);
+   extrapolator->AddImuData(imu_data);
+   extrapolator->imu_tracker_ =
+-      common::make_unique<ImuTracker>(imu_gravity_time_constant, imu_data.time);
++      std::make_unique<ImuTracker>(imu_gravity_time_constant, imu_data.time);
+   extrapolator->imu_tracker_->AddImuLinearAccelerationObservation(
+       imu_data.linear_acceleration);
+   extrapolator->imu_tracker_->AddImuAngularVelocityObservation(
+@@ -73,7 +73,7 @@ void PoseExtrapolator::AddPose(const common::Time time,
+       tracker_start = std::min(tracker_start, imu_data_.front().time);
+     }
+     imu_tracker_ =
+-        common::make_unique<ImuTracker>(gravity_time_constant_, tracker_start);
++        std::make_unique<ImuTracker>(gravity_time_constant_, tracker_start);
+   }
+   timed_pose_queue_.push_back(TimedPose{time, pose});
+   while (timed_pose_queue_.size() > 2 &&
+@@ -84,8 +84,8 @@ void PoseExtrapolator::AddPose(const common::Time time,
+   AdvanceImuTracker(time, imu_tracker_.get());
+   TrimImuData();
+   TrimOdometryData();
+-  odometry_imu_tracker_ = common::make_unique<ImuTracker>(*imu_tracker_);
+-  extrapolation_imu_tracker_ = common::make_unique<ImuTracker>(*imu_tracker_);
++  odometry_imu_tracker_ = std::make_unique<ImuTracker>(*imu_tracker_);
++  extrapolation_imu_tracker_ = std::make_unique<ImuTracker>(*imu_tracker_);
+ }
+ 
+ void PoseExtrapolator::AddImuData(const sensor::ImuData& imu_data) {
+diff --git a/cartographer/mapping/probability_values.cc b/cartographer/mapping/probability_values.cc
+index cae2357..0b8cbf0 100644
+--- a/cartographer/mapping/probability_values.cc
++++ b/cartographer/mapping/probability_values.cc
+@@ -38,7 +38,7 @@ float SlowValueToBoundedFloat(const uint16 value, const uint16 unknown_value,
+ std::unique_ptr<std::vector<float>> PrecomputeValueToBoundedFloat(
+     const uint16 unknown_value, const float unknown_result,
+     const float lower_bound, const float upper_bound) {
+-  auto result = common::make_unique<std::vector<float>>();
++  auto result = std::make_unique<std::vector<float>>();
+   // Repeat two times, so that both values with and without the update marker
+   // can be converted to a probability.
+   for (int repeat = 0; repeat != 2; ++repeat) {
+diff --git a/cartographer/sensor/internal/dispatchable.h b/cartographer/sensor/internal/dispatchable.h
+index 50eadbb..b95ee33 100644
+--- a/cartographer/sensor/internal/dispatchable.h
++++ b/cartographer/sensor/internal/dispatchable.h
+@@ -43,7 +43,7 @@ class Dispatchable : public Data {
+ template <typename DataType>
+ std::unique_ptr<Dispatchable<DataType>> MakeDispatchable(
+     const std::string &sensor_id, const DataType &data) {
+-  return common::make_unique<Dispatchable<DataType>>(sensor_id, data);
++  return std::make_unique<Dispatchable<DataType>>(sensor_id, data);
+ }
+ 
+ }  // namespace sensor
+diff --git a/cmake/functions.cmake b/cmake/functions.cmake
+index 3bfd343..ebe47db 100644
+--- a/cmake/functions.cmake
++++ b/cmake/functions.cmake
+@@ -72,7 +72,7 @@ macro(google_initialize_cartographer_project)
+     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+   endif()
+-  set(GOOG_CXX_FLAGS "-pthread -std=c++11 -fPIC ${GOOG_CXX_FLAGS}")
++  set(GOOG_CXX_FLAGS "-pthread -std=c++14 -fPIC ${GOOG_CXX_FLAGS}")
+ 
+   google_add_flag(GOOG_CXX_FLAGS "-Wall")
+   google_add_flag(GOOG_CXX_FLAGS "-Wpedantic")
+diff --git a/package.xml b/package.xml
+index fad715d..324dbf5 100644
+--- a/package.xml
++++ b/package.xml
+@@ -38,7 +38,7 @@
+ 
+   <build_depend>g++-static</build_depend>
+   <build_depend>google-mock</build_depend>
+-  <build_depend>python-sphinx</build_depend>
++  <build_depend>python3-sphinx</build_depend>
+ 
+   <depend>boost</depend>
+   <depend>ceres-solver</depend>
+diff --git a/scripts/install_debs_cmake.sh b/scripts/install_debs_cmake.sh
+index 178aa07..0618aff 100755
+--- a/scripts/install_debs_cmake.sh
++++ b/scripts/install_debs_cmake.sh
+@@ -32,4 +32,4 @@ sudo apt-get install -y \
+     liblua5.2-dev \
+     libsuitesparse-dev \
+     ninja-build \
+-    python-sphinx
++    python3-sphinx

@@ -1,0 +1,317 @@
+diff --git a/cartographer_ros/cartographer_ros/assets_writer.cc b/cartographer_ros/cartographer_ros/assets_writer.cc
+index 49b2c29..53a27ec 100644
+--- a/cartographer_ros/cartographer_ros/assets_writer.cc
++++ b/cartographer_ros/cartographer_ros/assets_writer.cc
+@@ -62,7 +62,7 @@ CreatePipelineBuilder(
+   const auto file_writer_factory =
+       AssetsWriter::CreateFileWriterFactory(file_prefix);
+   auto builder =
+-      carto::common::make_unique<carto::io::PointsProcessorPipelineBuilder>();
++      std::make_unique<carto::io::PointsProcessorPipelineBuilder>();
+   carto::io::RegisterBuiltInPointsProcessors(trajectories, file_writer_factory,
+                                              builder.get());
+   builder->Register(RosMapWritingPointsProcessor::kConfigurationFileActionName,
+@@ -80,13 +80,13 @@ std::unique_ptr<carto::common::LuaParameterDictionary> LoadLuaDictionary(
+     const std::string& configuration_directory,
+     const std::string& configuration_basename) {
+   auto file_resolver =
+-      carto::common::make_unique<carto::common::ConfigurationFileResolver>(
++      std::make_unique<carto::common::ConfigurationFileResolver>(
+           std::vector<std::string>{configuration_directory});
+ 
+   const std::string code =
+       file_resolver->GetFileContentOrDie(configuration_basename);
+   auto lua_parameter_dictionary =
+-      carto::common::make_unique<carto::common::LuaParameterDictionary>(
++      std::make_unique<carto::common::LuaParameterDictionary>(
+           code, std::move(file_resolver));
+   return lua_parameter_dictionary;
+ }
+@@ -99,7 +99,7 @@ std::unique_ptr<carto::io::PointsBatch> HandleMessage(
+         transform_interpolation_buffer) {
+   const carto::common::Time start_time = FromRos(message.header.stamp);
+ 
+-  auto points_batch = carto::common::make_unique<carto::io::PointsBatch>();
++  auto points_batch = std::make_unique<carto::io::PointsBatch>();
+   points_batch->start_time = start_time;
+   points_batch->frame_id = message.header.frame_id;
+ 
+@@ -264,7 +264,7 @@ void AssetsWriter::Run(const std::string& configuration_directory,
+ ::cartographer::io::FileWriterFactory AssetsWriter::CreateFileWriterFactory(
+     const std::string& file_path) {
+   const auto file_writer_factory = [file_path](const std::string& filename) {
+-    return carto::common::make_unique<carto::io::StreamFileWriter>(file_path +
++    return std::make_unique<carto::io::StreamFileWriter>(file_path +
+                                                                    filename);
+   };
+   return file_writer_factory;
+diff --git a/cartographer_ros/cartographer_ros/cartographer_grpc/node_grpc_main.cc b/cartographer_ros/cartographer_ros/cartographer_grpc/node_grpc_main.cc
+index 0e33f99..122d66f 100644
+--- a/cartographer_ros/cartographer_ros/cartographer_grpc/node_grpc_main.cc
++++ b/cartographer_ros/cartographer_ros/cartographer_grpc/node_grpc_main.cc
+@@ -54,7 +54,7 @@ void Run() {
+       LoadOptions(FLAGS_configuration_directory, FLAGS_configuration_basename);
+ 
+   auto map_builder =
+-      cartographer::common::make_unique<::cartographer::cloud::MapBuilderStub>(
++      std::make_unique<::cartographer::cloud::MapBuilderStub>(
+           FLAGS_server_address);
+   Node node(node_options, std::move(map_builder), &tf_buffer);
+ 
+diff --git a/cartographer_ros/cartographer_ros/cartographer_grpc/offline_node_grpc_main.cc b/cartographer_ros/cartographer_ros/cartographer_grpc/offline_node_grpc_main.cc
+index ffaabf1..f1719ad 100644
+--- a/cartographer_ros/cartographer_ros/cartographer_grpc/offline_node_grpc_main.cc
++++ b/cartographer_ros/cartographer_ros/cartographer_grpc/offline_node_grpc_main.cc
+@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
+ 
+   const cartographer_ros::MapBuilderFactory map_builder_factory =
+       [](const ::cartographer::mapping::proto::MapBuilderOptions&) {
+-        return ::cartographer::common::make_unique<
++        return ::std::make_unique<
+             ::cartographer::cloud::MapBuilderStub>(FLAGS_server_address);
+       };
+ 
+diff --git a/cartographer_ros/cartographer_ros/map_builder_bridge.cc b/cartographer_ros/cartographer_ros/map_builder_bridge.cc
+index df3d0c3..d88ea96 100644
+--- a/cartographer_ros/cartographer_ros/map_builder_bridge.cc
++++ b/cartographer_ros/cartographer_ros/map_builder_bridge.cc
+@@ -132,7 +132,7 @@ int MapBuilderBridge::AddTrajectory(
+   // Make sure there is no trajectory with 'trajectory_id' yet.
+   CHECK_EQ(sensor_bridges_.count(trajectory_id), 0);
+   sensor_bridges_[trajectory_id] =
+-      cartographer::common::make_unique<SensorBridge>(
++      std::make_unique<SensorBridge>(
+           trajectory_options.num_subdivisions_per_laser_scan,
+           trajectory_options.tracking_frame,
+           node_options_.lookup_transform_timeout_sec, tf_buffer_,
+diff --git a/cartographer_ros/cartographer_ros/msg_conversion.cc b/cartographer_ros/cartographer_ros/msg_conversion.cc
+index 2548005..92a8c51 100644
+--- a/cartographer_ros/cartographer_ros/msg_conversion.cc
++++ b/cartographer_ros/cartographer_ros/msg_conversion.cc
+@@ -305,7 +305,7 @@ std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
+     const double resolution, const std::string& frame_id,
+     const ros::Time& time) {
+   auto occupancy_grid =
+-      ::cartographer::common::make_unique<nav_msgs::OccupancyGrid>();
++      std::make_unique<nav_msgs::OccupancyGrid>();
+ 
+   const int width = cairo_image_surface_get_width(painted_slices.surface.get());
+   const int height =
+diff --git a/cartographer_ros/cartographer_ros/node_main.cc b/cartographer_ros/cartographer_ros/node_main.cc
+index 62d8181..e33fb1e 100644
+--- a/cartographer_ros/cartographer_ros/node_main.cc
++++ b/cartographer_ros/cartographer_ros/node_main.cc
+@@ -53,7 +53,7 @@ void Run() {
+       LoadOptions(FLAGS_configuration_directory, FLAGS_configuration_basename);
+ 
+   auto map_builder =
+-      cartographer::common::make_unique<cartographer::mapping::MapBuilder>(
++      std::make_unique<cartographer::mapping::MapBuilder>(
+           node_options.map_builder_options);
+   Node node(node_options, std::move(map_builder), &tf_buffer);
+   if (!FLAGS_load_state_filename.empty()) {
+diff --git a/cartographer_ros/cartographer_ros/node_options.cc b/cartographer_ros/cartographer_ros/node_options.cc
+index 004006c..efba122 100644
+--- a/cartographer_ros/cartographer_ros/node_options.cc
++++ b/cartographer_ros/cartographer_ros/node_options.cc
+@@ -46,7 +46,7 @@ NodeOptions CreateNodeOptions(
+ std::tuple<NodeOptions, TrajectoryOptions> LoadOptions(
+     const std::string& configuration_directory,
+     const std::string& configuration_basename) {
+-  auto file_resolver = cartographer::common::make_unique<
++  auto file_resolver = std::make_unique<
+       cartographer::common::ConfigurationFileResolver>(
+       std::vector<std::string>{configuration_directory});
+   const std::string code =
+diff --git a/cartographer_ros/cartographer_ros/offline_node_main.cc b/cartographer_ros/cartographer_ros/offline_node_main.cc
+index 845954f..7806328 100644
+--- a/cartographer_ros/cartographer_ros/offline_node_main.cc
++++ b/cartographer_ros/cartographer_ros/offline_node_main.cc
+@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
+   const cartographer_ros::MapBuilderFactory map_builder_factory =
+       [](const ::cartographer::mapping::proto::MapBuilderOptions&
+              map_builder_options) {
+-        return ::cartographer::common::make_unique<
++        return ::std::make_unique<
+             ::cartographer::mapping::MapBuilder>(map_builder_options);
+       };
+ 
+diff --git a/cartographer_ros/cartographer_ros/playable_bag.cc b/cartographer_ros/cartographer_ros/playable_bag.cc
+index d9d17ed..0979ccc 100644
+--- a/cartographer_ros/cartographer_ros/playable_bag.cc
++++ b/cartographer_ros/cartographer_ros/playable_bag.cc
+@@ -28,9 +28,9 @@ PlayableBag::PlayableBag(
+     const ros::Time start_time, const ros::Time end_time,
+     const ros::Duration buffer_delay,
+     FilteringEarlyMessageHandler filtering_early_message_handler)
+-    : bag_(cartographer::common::make_unique<rosbag::Bag>(
++    : bag_(std::make_unique<rosbag::Bag>(
+           bag_filename, rosbag::bagmode::Read)),
+-      view_(cartographer::common::make_unique<rosbag::View>(*bag_, start_time,
++      view_(std::make_unique<rosbag::View>(*bag_, start_time,
+                                                             end_time)),
+       view_iterator_(view_->begin()),
+       finished_(false),
+diff --git a/cartographer_ros/cartographer_ros/ros_map_writing_points_processor.cc b/cartographer_ros/cartographer_ros/ros_map_writing_points_processor.cc
+index c25cb3b..cf2d383 100644
+--- a/cartographer_ros/cartographer_ros/ros_map_writing_points_processor.cc
++++ b/cartographer_ros/cartographer_ros/ros_map_writing_points_processor.cc
+@@ -42,7 +42,7 @@ RosMapWritingPointsProcessor::FromDictionary(
+     ::cartographer::io::FileWriterFactory file_writer_factory,
+     ::cartographer::common::LuaParameterDictionary* const dictionary,
+     ::cartographer::io::PointsProcessor* const next) {
+-  return ::cartographer::common::make_unique<RosMapWritingPointsProcessor>(
++  return ::std::make_unique<RosMapWritingPointsProcessor>(
+       dictionary->GetDouble("resolution"),
+       ::cartographer::mapping::CreateProbabilityGridRangeDataInserterOptions2D(
+           dictionary->GetDictionary("range_data_inserter").get()),
+diff --git a/cartographer_ros/cartographer_ros/rosbag_validate_main.cc b/cartographer_ros/cartographer_ros/rosbag_validate_main.cc
+index b05db39..7a9e3c3 100644
+--- a/cartographer_ros/cartographer_ros/rosbag_validate_main.cc
++++ b/cartographer_ros/cartographer_ros/rosbag_validate_main.cc
+@@ -72,7 +72,7 @@ const std::set<std::string> kPointDataTypes = {
+         ros::message_traits::DataType<sensor_msgs::LaserScan>::value())};
+ 
+ std::unique_ptr<std::ofstream> CreateTimingFile(const std::string& frame_id) {
+-  auto timing_file = ::cartographer::common::make_unique<std::ofstream>(
++  auto timing_file = ::std::make_unique<std::ofstream>(
+       std::string("timing_") + frame_id + ".csv", std::ios_base::out);
+ 
+   (*timing_file)
+diff --git a/cartographer_ros/cartographer_ros/sensor_bridge.cc b/cartographer_ros/cartographer_ros/sensor_bridge.cc
+index 416efe4..b679fde 100644
+--- a/cartographer_ros/cartographer_ros/sensor_bridge.cc
++++ b/cartographer_ros/cartographer_ros/sensor_bridge.cc
+@@ -56,7 +56,7 @@ std::unique_ptr<carto::sensor::OdometryData> SensorBridge::ToOdometryData(
+   if (sensor_to_tracking == nullptr) {
+     return nullptr;
+   }
+-  return carto::common::make_unique<carto::sensor::OdometryData>(
++  return std::make_unique<carto::sensor::OdometryData>(
+       carto::sensor::OdometryData{
+           time, ToRigid3d(msg->pose.pose) * sensor_to_tracking->inverse()});
+ }
+@@ -127,7 +127,7 @@ std::unique_ptr<carto::sensor::ImuData> SensorBridge::ToImuData(
+       << "The IMU frame must be colocated with the tracking frame. "
+          "Transforming linear acceleration into the tracking frame will "
+          "otherwise be imprecise.";
+-  return carto::common::make_unique<carto::sensor::ImuData>(
++  return std::make_unique<carto::sensor::ImuData>(
+       carto::sensor::ImuData{
+           time,
+           sensor_to_tracking->rotation() * ToEigen(msg->linear_acceleration),
+diff --git a/cartographer_ros/cartographer_ros/start_trajectory_main.cc b/cartographer_ros/cartographer_ros/start_trajectory_main.cc
+index 2930c68..3ec4e34 100644
+--- a/cartographer_ros/cartographer_ros/start_trajectory_main.cc
++++ b/cartographer_ros/cartographer_ros/start_trajectory_main.cc
+@@ -44,7 +44,7 @@ namespace cartographer_ros {
+ namespace {
+ 
+ TrajectoryOptions LoadOptions() {
+-  auto file_resolver = cartographer::common::make_unique<
++  auto file_resolver = std::make_unique<
+       cartographer::common::ConfigurationFileResolver>(
+       std::vector<std::string>{FLAGS_configuration_directory});
+   const std::string code =
+@@ -54,7 +54,7 @@ TrajectoryOptions LoadOptions() {
+           code, std::move(file_resolver));
+   if (!FLAGS_initial_pose.empty()) {
+     auto initial_trajectory_pose_file_resolver =
+-        cartographer::common::make_unique<
++        std::make_unique<
+             cartographer::common::ConfigurationFileResolver>(
+             std::vector<std::string>{FLAGS_configuration_directory});
+     auto initial_trajectory_pose =
+diff --git a/cartographer_ros/cartographer_ros/submap.cc b/cartographer_ros/cartographer_ros/submap.cc
+index 4a679f1..93c2e5e 100644
+--- a/cartographer_ros/cartographer_ros/submap.cc
++++ b/cartographer_ros/cartographer_ros/submap.cc
+@@ -39,7 +39,7 @@ std::unique_ptr<::cartographer::io::SubmapTextures> FetchSubmapTextures(
+     return nullptr;
+   }
+   auto response =
+-      ::cartographer::common::make_unique<::cartographer::io::SubmapTextures>();
++      ::std::make_unique<::cartographer::io::SubmapTextures>();
+   response->version = srv.response.submap_version;
+   for (const auto& texture : srv.response.textures) {
+     const std::string compressed_cells(texture.cells.begin(),
+diff --git a/cartographer_ros/cartographer_ros/tf_bridge.cc b/cartographer_ros/cartographer_ros/tf_bridge.cc
+index 0985026..d9f7f53 100644
+--- a/cartographer_ros/cartographer_ros/tf_bridge.cc
++++ b/cartographer_ros/cartographer_ros/tf_bridge.cc
+@@ -45,7 +45,7 @@ std::unique_ptr<::cartographer::transform::Rigid3d> TfBridge::LookupToTracking(
+       // for the full 'timeout' even if we ask for data that is too old.
+       timeout = ::ros::Duration(0.);
+     }
+-    return ::cartographer::common::make_unique<
++    return ::std::make_unique<
+         ::cartographer::transform::Rigid3d>(ToRigid3d(buffer_->lookupTransform(
+         tracking_frame_, frame_id, requested_time, timeout)));
+   } catch (const tf2::TransformException& ex) {
+diff --git a/cartographer_ros/package.xml b/cartographer_ros/package.xml
+index 62e0e9c..b3e6a07 100644
+--- a/cartographer_ros/package.xml
++++ b/cartographer_ros/package.xml
+@@ -39,7 +39,7 @@
+   <build_depend>google-mock</build_depend>
+   <build_depend>g++-static</build_depend>
+   <build_depend>protobuf-dev</build_depend>
+-  <build_depend>python-sphinx</build_depend>
++  <build_depend>python3-sphinx</build_depend>
+ 
+   <depend version_gte="1.0.0">cartographer</depend>
+   <depend version_gte="1.0.0">cartographer_ros_msgs</depend>
+diff --git a/cartographer_rviz/cartographer_rviz/drawable_submap.cc b/cartographer_rviz/cartographer_rviz/drawable_submap.cc
+index afe9acf..fadde77 100644
+--- a/cartographer_rviz/cartographer_rviz/drawable_submap.cc
++++ b/cartographer_rviz/cartographer_rviz/drawable_submap.cc
+@@ -63,14 +63,14 @@ DrawableSubmap::DrawableSubmap(const ::cartographer::mapping::SubmapId& id,
+       last_query_timestamp_(0) {
+   for (int slice_index = 0; slice_index < kNumberOfSlicesPerSubmap;
+        ++slice_index) {
+-    ogre_slices_.emplace_back(::cartographer::common::make_unique<OgreSlice>(
++    ogre_slices_.emplace_back(::std::make_unique<OgreSlice>(
+         id, slice_index, display_context->getSceneManager(), submap_node_));
+   }
+   // DrawableSubmap creates and manages its visibility property object
+   // (a unique_ptr is needed because the Qt parent of the visibility
+   // property is the submap_category object - the BoolProperty needs
+   // to be destroyed along with the DrawableSubmap)
+-  visibility_ = ::cartographer::common::make_unique<::rviz::BoolProperty>(
++  visibility_ = ::std::make_unique<::rviz::BoolProperty>(
+       "" /* title */, visible, "" /* description */, submap_category,
+       SLOT(ToggleVisibility()), this);
+   submap_id_text_.setCharacterHeight(kSubmapIdCharHeight);
+diff --git a/cartographer_rviz/cartographer_rviz/submaps_display.cc b/cartographer_rviz/cartographer_rviz/submaps_display.cc
+index 8730105..998b873 100644
+--- a/cartographer_rviz/cartographer_rviz/submaps_display.cc
++++ b/cartographer_rviz/cartographer_rviz/submaps_display.cc
+@@ -113,7 +113,7 @@ void SubmapsDisplay::processMessage(
+     const ::cartographer_ros_msgs::SubmapList::ConstPtr& msg) {
+   ::cartographer::common::MutexLocker locker(&mutex_);
+   map_frame_ =
+-      ::cartographer::common::make_unique<std::string>(msg->header.frame_id);
++      ::std::make_unique<std::string>(msg->header.frame_id);
+   // In case Cartographer node is relaunched, destroy trajectories from the
+   // previous instance.
+   for (const ::cartographer_ros_msgs::SubmapEntry& submap_entry : msg->submap) {
+@@ -136,8 +136,8 @@ void SubmapsDisplay::processMessage(
+     const SubmapId id{submap_entry.trajectory_id, submap_entry.submap_index};
+     listed_submaps.insert(id);
+     while (id.trajectory_id >= static_cast<int>(trajectories_.size())) {
+-      trajectories_.push_back(::cartographer::common::make_unique<Trajectory>(
+-          ::cartographer::common::make_unique<::rviz::BoolProperty>(
++      trajectories_.push_back(::std::make_unique<Trajectory>(
++          ::std::make_unique<::rviz::BoolProperty>(
+               QString("Trajectory %1").arg(id.trajectory_id),
+               visibility_all_enabled_->getBool(),
+               QString("List of all submaps in Trajectory %1. The checkbox "
+@@ -154,7 +154,7 @@ void SubmapsDisplay::processMessage(
+       constexpr float kSubmapPoseAxesRadius = 0.06f;
+       trajectory_submaps.emplace(
+           id.submap_index,
+-          ::cartographer::common::make_unique<DrawableSubmap>(
++          ::std::make_unique<DrawableSubmap>(
+               id, context_, map_node_, trajectory_visibility.get(),
+               trajectory_visibility->getBool(), kSubmapPoseAxesLength,
+               kSubmapPoseAxesRadius));
