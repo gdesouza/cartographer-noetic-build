@@ -4,6 +4,9 @@ FROM ros:noetic-ros-base-focal
 # https://google-cartographer-ros.readthedocs.io/en/latest/compilation.html
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV CARTOGRAPHER_VERSION=1.0.0
+
+
 
 # install ros package
 RUN apt-get update && \
@@ -34,16 +37,15 @@ RUN wstool update -t src
 
 
 # apply patches for Ubuntu 20.04 / ROS Noetic
-COPY files/cartographer-noetic.patch /root/catkin_ws/src/cartographer
 WORKDIR /root/catkin_ws/src/cartographer
-RUN git checkout 1.0.0 
+COPY files/cartographer-noetic.patch .
+RUN git checkout $CARTOGRAPHER_VERSION
 RUN git apply cartographer-noetic.patch
 
-COPY files/cartographer-ros-noetic.patch /root/catkin_ws/src/cartographer_ros
 WORKDIR /root/catkin_ws/src/cartographer_ros
-RUN git checkout 1.0.0
+COPY files/cartographer-ros-noetic.patch .
+RUN git checkout $CARTOGRAPHER_VERSION
 RUN git apply cartographer-ros-noetic.patch
-
 
 
 # Install cartographer_ros’ dependencies (proto3 and deb packages). 
@@ -53,15 +55,9 @@ RUN rosdep init || true
 RUN rosdep update
 RUN rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 
-# uninstall the ros abseil-cpp 
-#RUN apt-get remove ros-${ROS_DISTRO}-abseil-cpp
-
-# Fix broken test
-# https://github.com/carnegierobotics/cartographer/commit/73404c21dc67ae55e7f0ab5f2570acd265169167
-RUN mv src/cartographer/cartographer/mapping/3d/hybrid_grid_test.cc src/cartographer/cartographer/mapping/3d/hybrid_grid_test.cpp 
-
-
 COPY files/build.sh /root/catkin_ws
 RUN chmod +x /root/catkin_ws/build.sh
+
+RUN apt-get install fakeroot debhelper python3-bloom -y
 
 ENTRYPOINT ["/root/catkin_ws/build.sh"]
