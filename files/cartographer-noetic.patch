@@ -1349,6 +1349,10 @@ index 423f9c9..4e3484b 100644
      }
      const Eigen::Array3i inner_index =
          shifted_index - meta_index * WrappedGrid::grid_size();
+diff --git a/cartographer/mapping/3d/hybrid_grid_test.cc b/cartographer/mapping/3d/hybrid_grid_test.cpp
+similarity index 100%
+rename from cartographer/mapping/3d/hybrid_grid_test.cc
+rename to cartographer/mapping/3d/hybrid_grid_test.cpp
 diff --git a/cartographer/mapping/3d/submap_3d.cc b/cartographer/mapping/3d/submap_3d.cc
 index af57a30..1365513 100644
 --- a/cartographer/mapping/3d/submap_3d.cc
@@ -2284,9 +2288,18 @@ index 3bfd343..ebe47db 100644
    google_add_flag(GOOG_CXX_FLAGS "-Wall")
    google_add_flag(GOOG_CXX_FLAGS "-Wpedantic")
 diff --git a/package.xml b/package.xml
-index fad715d..324dbf5 100644
+index fad715d..4ba7adb 100644
 --- a/package.xml
 +++ b/package.xml
+@@ -17,7 +17,7 @@
+ 
+ <package format="2">
+   <name>cartographer</name>
+-  <version>1.0.0</version>
++  <version>0.3.0</version>
+   <description>
+     Cartographer is a system that provides real-time simultaneous localization
+     and mapping (SLAM) in 2D and 3D across multiple platforms and sensor
 @@ -38,7 +38,7 @@
  
    <build_depend>g++-static</build_depend>
