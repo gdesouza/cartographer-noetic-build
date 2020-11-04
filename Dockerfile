@@ -56,8 +56,12 @@ RUN rosdep update
 RUN rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 
 COPY files/build.sh /root/catkin_ws
+COPY files/pack.sh /root/catkin_ws
 RUN chmod +x /root/catkin_ws/build.sh
+RUN chmod +x /root/catkin_ws/pack.sh
 
 RUN apt-get install fakeroot debhelper python3-bloom -y
 
-ENTRYPOINT ["/root/catkin_ws/build.sh"]
+RUN /root/catkin_ws/build.sh
+
+#ENTRYPOINT ["/root/catkin_ws/build.sh"]
