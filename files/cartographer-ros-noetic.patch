@@ -1,3 +1,29 @@
+diff --git a/cartographer_ros/CMakeLists.txt b/cartographer_ros/CMakeLists.txt
+index e8590a4..23146bc 100644
+--- a/cartographer_ros/CMakeLists.txt
++++ b/cartographer_ros/CMakeLists.txt
+@@ -14,6 +14,8 @@
+ 
+ cmake_minimum_required(VERSION 2.8.12)  # Ships with Ubuntu 14.04 (Trusty)
+ 
++add_compile_options(-std=c++14)
++
+ project(cartographer_ros)
+ 
+ set(PACKAGE_DEPENDENCIES
+diff --git a/cartographer_rviz/CMakeLists.txt b/cartographer_rviz/CMakeLists.txt
+index 47d8a9f..0823ebb 100644
+--- a/cartographer_rviz/CMakeLists.txt
++++ b/cartographer_rviz/CMakeLists.txt
+@@ -14,6 +14,8 @@
+ 
+ cmake_minimum_required(VERSION 2.8.12)  # Ships with Ubuntu 14.04 (Trusty)
+ 
++add_compile_options(-std=c++14)
++
+ project(cartographer_rviz)
+ 
+ set(PACKAGE_DEPENDENCIES
 diff --git a/cartographer_ros/cartographer_ros/assets_writer.cc b/cartographer_ros/cartographer_ros/assets_writer.cc
 index 49b2c29..53a27ec 100644
 --- a/cartographer_ros/cartographer_ros/assets_writer.cc
