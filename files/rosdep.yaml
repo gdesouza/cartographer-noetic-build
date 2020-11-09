@@ -1,0 +1,16 @@
+ceres-solver:
+  ubuntu: 
+    focal: [ros-noetic-ceres-solver]
+
+cartographer:
+  ubuntu:
+    focal: [ros-noetic-cartographer]
+
+cartographer_ros_msgs:
+  ubuntu:
+    focal: [ros-noetic-cartographer-ros-msgs]
+
+
+cartographer_ros:
+  ubuntu:
+    focal: [ros-noetic-cartographer-ros]
