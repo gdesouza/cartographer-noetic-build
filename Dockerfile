@@ -6,8 +6,6 @@ FROM ros:noetic-ros-base-focal
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CARTOGRAPHER_VERSION=1.0.0
 
-
-
 # install ros package
 RUN apt-get update && \
     apt-get install -y \ 
@@ -35,6 +33,12 @@ RUN wstool init src
 RUN wstool merge -t src https://raw.githubusercontent.com/cartographer-project/cartographer_ros/master/cartographer_ros.rosinstall
 RUN wstool update -t src
 
+# Install cartographer_ros’ dependencies (proto3 and deb packages). 
+WORKDIR /root/catkin_ws
+RUN src/cartographer/scripts/install_proto3.sh
+RUN rosdep init || true
+RUN rosdep update
+RUN rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 
 # apply patches for Ubuntu 20.04 / ROS Noetic
 WORKDIR /root/catkin_ws/src/cartographer
@@ -47,21 +51,20 @@ COPY files/cartographer-ros-noetic.patch .
 RUN git checkout $CARTOGRAPHER_VERSION
 RUN git apply cartographer-ros-noetic.patch
 
+WORKDIR /root/catkin_ws/src
+RUN git clone https://ceres-solver.googlesource.com/ceres-solver
 
-# Install cartographer_ros’ dependencies (proto3 and deb packages). 
-WORKDIR /root/catkin_ws
-RUN src/cartographer/scripts/install_proto3.sh
-RUN rosdep init || true
-RUN rosdep update
-RUN rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
-
-COPY files/build.sh /root/catkin_ws
-COPY files/pack.sh /root/catkin_ws
-RUN chmod +x /root/catkin_ws/build.sh
-RUN chmod +x /root/catkin_ws/pack.sh
+COPY files/*.sh /root/catkin_ws
+RUN chmod +x /root/catkin_ws/*.sh
 
 RUN apt-get install fakeroot debhelper python3-bloom -y
+RUN apt-get install ros-noetic-eigen-conversions
 
+COPY files/rosdep.yaml /root/rosdep.yaml
+COPY files/30-cartographer.list /etc/ros/rosdep/sources.list.d/30-cartographer.list                                    
+
+RUN /root/catkin_ws/build_ceres.sh
 RUN /root/catkin_ws/build.sh
+#RUN /root/catkin_ws/pack.sh
 
 #ENTRYPOINT ["/root/catkin_ws/build.sh"]
