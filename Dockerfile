@@ -24,10 +24,15 @@ RUN apt-get update && \
         
 
 
-# prepare to compile
-RUN mkdir -p ~/catkin_ws
+# Compile and Install ceres-solver
+WORKDIR /root/catkin_ws
+RUN git clone https://ceres-solver.googlesource.com/ceres-solver
+RUN /root/catkin_ws/build_ceres.sh
+RUN dpkg -i ros-noetic-ceres*.deb
+
 
 # create a new cartographer_ros workspace in ‘catkin_ws’.
+RUN mkdir -p ~/catkin_ws
 WORKDIR /root/catkin_ws
 RUN wstool init src
 RUN wstool merge -t src https://raw.githubusercontent.com/cartographer-project/cartographer_ros/master/cartographer_ros.rosinstall
@@ -51,8 +56,6 @@ COPY files/cartographer-ros-noetic.patch .
 RUN git checkout $CARTOGRAPHER_VERSION
 RUN git apply cartographer-ros-noetic.patch
 
-WORKDIR /root/catkin_ws/src
-RUN git clone https://ceres-solver.googlesource.com/ceres-solver
 
 COPY files/*.sh /root/catkin_ws/
 RUN chmod +x /root/catkin_ws/*.sh
@@ -64,8 +67,6 @@ COPY files/rosdep.yaml /root/rosdep.yaml
 COPY files/30-cartographer.list /etc/ros/rosdep/sources.list.d/30-cartographer.list                                    
 RUN rosdep update
 
-RUN /root/catkin_ws/build_ceres.sh
-RUN dpkg -i ros-noetic-ceres*.deb
 
 #RUN /root/catkin_ws/build.sh
 #RUN /root/catkin_ws/pack.sh
