@@ -40,7 +40,7 @@ RUN rosdep init || true
 RUN rosdep update
 RUN rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 
-# apply patches for Ubuntu 20.04 / ROS Noetic
+    # apply patches for Ubuntu 20.04 / ROS Noetic
 WORKDIR /root/catkin_ws/src/cartographer
 COPY files/cartographer-noetic.patch .
 RUN git checkout $CARTOGRAPHER_VERSION
@@ -54,7 +54,7 @@ RUN git apply cartographer-ros-noetic.patch
 WORKDIR /root/catkin_ws/src
 RUN git clone https://ceres-solver.googlesource.com/ceres-solver
 
-COPY files/*.sh /root/catkin_ws
+COPY files/*.sh /root/catkin_ws/
 RUN chmod +x /root/catkin_ws/*.sh
 
 RUN apt-get install fakeroot debhelper python3-bloom -y
@@ -62,9 +62,12 @@ RUN apt-get install ros-noetic-eigen-conversions
 
 COPY files/rosdep.yaml /root/rosdep.yaml
 COPY files/30-cartographer.list /etc/ros/rosdep/sources.list.d/30-cartographer.list                                    
+RUN rosdep update
 
 RUN /root/catkin_ws/build_ceres.sh
-RUN /root/catkin_ws/build.sh
+RUN dpkg -i ros-noetic-ceres*.deb
+
+#RUN /root/catkin_ws/build.sh
 #RUN /root/catkin_ws/pack.sh
 
-#ENTRYPOINT ["/root/catkin_ws/build.sh"]
+ENTRYPOINT ["/root/catkin_ws/pack.sh"]
